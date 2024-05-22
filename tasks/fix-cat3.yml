@@ -1,0 +1,164 @@
+---
+
+- name: "LOW | CNTR-OS-000130 | PATCH | OpenShift must display the Standard Mandatory DOD Notice and Consent Banner before granting access to platform components."
+  block:
+  - name: "LOW | CNTR-OS-000130 | PATCH | OpenShift must display the Standard Mandatory DOD Notice and Consent Banner before granting access to platform components. | Check"
+    debug:
+        msg: "To verify the OpenShift CLI tool is configured to display the DOD Notice and Consent Banner, do either of the following steps:
+
+Log in to OpenShift using the oc CLI tool.
+
+oc login -u <USER> <OPENSHIFT_URL>
+enter password when prompted
+
+If the DOD Notice and Consent Banner is not displayed, this is a finding.
+
+Or
+
+Verify that motd config map exists and contains the DOD Notice and Consent Banner by executing the following:
+
+oc describe configmap/motd -n openshift
+
+If the configmap does not exist, or it does not contain the DOD Notice and Consent Banner text in the message data attribute, this is a finding."
+    when:
+        - cntr_os_000130
+    tags:
+        - CNTR-OS-000130
+        - CAT3
+        - CCI-000048
+        - SRG-APP-000068-CTR-000120
+        - SV-257516r921491_rule
+        - V-257516
+
+  - name: "LOW | CNTR-OS-000130 | PATCH | OpenShift must display the Standard Mandatory DOD Notice and Consent Banner before granting access to platform components. | Fix"
+    debug:
+        msg: "The following command will create a configmap that displays the DOD Notice and Consent Banner when logging in using the OpenShift CLI tool by executing the following:
+
+echo 'apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: motd
+  namespace: openshift
+data:
+  message: "You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only. By using this IS (which includes any device attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details."' | oc apply -f -"
+    when:
+        - cntr_os_000130
+    tags:
+        - CNTR-OS-000130
+        - CAT3
+        - CCI-000048
+        - SRG-APP-000068-CTR-000120
+        - SV-257516r921491_rule
+        - V-257516
+
+- name: "LOW | CNTR-OS-000650 | PATCH | OpenShift must display an explicit logout message indicating the reliable termination of authenticated communication sessions."
+  block:
+  - name: "LOW | CNTR-OS-000650 | PATCH | OpenShift must display an explicit logout message indicating the reliable termination of authenticated communication sessions. | Check"
+    debug:
+        msg: "Verify the logout redirect setting in web console configuration is set by executing the following:
+
+oc get console.config.openshift.io cluster -o jsonpath='{.spec.authentication.logoutRedirect}{"\n"}'
+
+If nothing is returned, this is a finding."
+    when:
+        - cntr_os_000650
+    tags:
+        - CNTR-OS-000650
+        - CAT3
+        - CCI-002364
+        - SRG-APP-000297-CTR-000705
+        - SV-257556r921611_rule
+        - V-257556
+
+  - name: "LOW | CNTR-OS-000650 | PATCH | OpenShift must display an explicit logout message indicating the reliable termination of authenticated communication sessions. | Fix"
+    debug:
+        msg: "Configure the web console's logout redirect to direct to an appropriate logout page. If OpenShift is configured to use an OIDC provider, then the redirect needs to first go to the OIDC provider's logout page, and then it can be redirected to another logout page as needed.
+
+Run the following command to update the console:
+
+oc patch console.config.openshift.io cluster --type merge -p '{"spec":{"authentication":{"logoutRedirect":"<LOGOUT_URL>"}}}'
+
+where LOGOUT_URL is set to the logout page."
+    when:
+        - cntr_os_000650
+    tags:
+        - CNTR-OS-000650
+        - CAT3
+        - CCI-002364
+        - SRG-APP-000297-CTR-000705
+        - SV-257556r921611_rule
+        - V-257556
+
+- name: "LOW | CNTR-OS-000670 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must allocate audit record storage capacity to store at least one weeks' worth of audit records, when audit records are not immediately sent to a central audit record storage facility."
+  block:
+  - name: "LOW | CNTR-OS-000670 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must allocate audit record storage capacity to store at least one weeks' worth of audit records, when audit records are not immediately sent to a central audit record storage facility. | Check"
+    debug:
+        msg: "Verify RHCOS allocates audit record storage capacity to store at least one week of audit records when audit records are not immediately sent to a central audit record storage facility.
+
+Check the size of the partition to which audit records are written (with the example being /var/log/audit/) by executing the following:
+
+for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME ";  df -h /var/log/audit/' 2>/dev/null; done
+
+<node> Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb4       1.0T   27G  998G   3% /var
+
+If the audit record partition is not allocated for sufficient storage capacity, this is a finding.
+
+Note: The partition size needed to capture a week of audit records is based on the activity level of the system and the total storage capacity available. Typically, 10.0 GB of storage space for audit records should be sufficient. If the partition used is not exclusively for audit logs, then determine the amount of additional space needed to support the partition reserving enough space for audit logs."
+    when:
+        - cntr_os_000670
+    tags:
+        - CNTR-OS-000670
+        - CAT3
+        - CCI-001849
+        - SRG-APP-000357-CTR-000800
+        - SV-257558r921617_rule
+        - V-257558
+
+  - name: "LOW | CNTR-OS-000670 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must allocate audit record storage capacity to store at least one weeks' worth of audit records, when audit records are not immediately sent to a central audit record storage facility. | Fix"
+    debug:
+        msg: "Reinstall the cluster, generating custom ignition configs to allocate audit record storage capacity.
+
+1. Generate manifest files for the cluster by executing the following:
+
+openshift-install create manifests --dir <install_dir>
+
+2. Create a Butane config that configures additional partition by executing the following:
+
+variant: openshift
+version: 4.9.0
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 98-var-partition
+storage:
+  disks:
+  - device: /dev/<device_name> 
+    partitions:
+    - label: var
+      start_mib: <partition_start_offset> 
+      size_mib: <partition_size> 
+  filesystems:
+    - device: /dev/disk/by-partlabel/var
+      path: /var
+      format: xfs
+      mount_options: [rw, nodev, nosuid, noexec,...] 
+      with_mount_unit: true
+
+3. Create a manifest from the Butane config by executing the following:
+
+butane <install_dir>/98-var-partition.bu -o <install_dir>/openshift/98-var-partition.yaml
+
+4. Create the ignition config files by executing the following:
+
+openshift-install create ignition-configs --dir <install_dir>"
+    when:
+        - cntr_os_000670
+    tags:
+        - CNTR-OS-000670
+        - CAT3
+        - CCI-001849
+        - SRG-APP-000357-CTR-000800
+        - SV-257558r921617_rule
+        - V-257558
+

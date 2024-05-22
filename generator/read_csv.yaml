@@ -1,0 +1,63 @@
+- hosts: localhost
+  vars: 
+    cat_severity: {
+      "high": "CAT1",
+      "medium": "CAT2",
+      "low": "CAT3",
+    }
+    high_rules: []
+    medium_rules: []
+    low_rules: []
+
+  tasks:
+    - name: Read users from CSV file and return a dictionary
+      community.general.read_csv:
+        path: test.csv
+        #key: Rule ID
+        unique: false
+      register: users
+      delegate_to: localhost
+    # - debug:
+    #     msg: "{{ item['Severity'] | upper }} | {{ item['STIG ID'] }} | PATCH | {{ item['Rule Title'] }}"
+    #     # - name: "HIGH | CNTR-K8-000220 | PATCH | The Kubernetes Controller Manager must create unique service accounts for each work payload."
+    #   with_items: "{{ users.list  }}"
+    #     # msg: "{{ users.dict   }}"
+
+    - name: Filter element by ID LOW
+      set_fact:
+        low_rules: "{{ low_rules + [item] }}"
+      with_items: "{{ users.list  }}"
+      when: " (item['Severity'] | lower ) == 'low' "
+
+    - name: Filter element by ID MEDIUM
+      set_fact:
+        medium_rules: "{{ medium_rules + [item] }}"
+      with_items: "{{ users.list  }}"
+      when: " (item['Severity'] | lower ) == 'medium' "
+
+    - name: Filter element by ID HIGH
+      set_fact:
+        high_rules: "{{ high_rules + [item] }}"
+      with_items: "{{ users.list  }}"
+      when: " (item['Severity'] | lower ) == 'high' "
+
+    - name: Create CAT1 templates
+      ansible.builtin.template:
+        src: task_proto.j2
+        dest: "CAT1.yaml"
+      vars:
+        template_ruleset: "{{ high_rules  }}"
+
+    - name: Create CAT2 templates
+      ansible.builtin.template:
+        src: task_proto.j2
+        dest: "CAT2.yaml"
+      vars:
+        template_ruleset: "{{ medium_rules  }}"
+
+    - name: Create CAT3 templates
+      ansible.builtin.template:
+        src: task_proto.j2
+        dest: "CAT3.yaml"
+      vars:
+        template_ruleset: "{{ low_rules  }}"
