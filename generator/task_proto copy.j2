@@ -3,12 +3,24 @@
 {% for rule  in template_ruleset %}
 - name: "{{ rule['Severity'] | upper }} | {{ rule['STIG ID'] }} | PATCH | {{ rule['Rule Title'] }}"
   block:
+  - name: "{{ rule['Severity'] | upper }} | {{ rule['STIG ID'] }} | PATCH | {{ rule['Rule Title'] }} | Check"
+    debug:
+        msg: "{{ rule['Check Content'] }}"
+    when:
+        - {{ rule['STIG ID'] | lower |  regex_replace('-', '_')}}
+    tags:
+        - {{ rule['STIG ID'] }}
+        - {{ cat_severity[rule['Severity']] }}
+        - {{ rule['CCI'] | split('\n') | first }}
+        - {{ rule['Group Title'] }}
+        - {{ rule['Rule ID'] }}
+        - {{ rule['\ufeff"Vuln ID"'] }}
+
   - name: "{{ rule['Severity'] | upper }} | {{ rule['STIG ID'] }} | PATCH | {{ rule['Rule Title'] }} | Fix"
     debug:
         msg: "{{ rule['Fix Text'] }}"
     when:
         - {{ rule['STIG ID'] | lower |  regex_replace('-', '_')}}
-        - okd412stig_{{ cat_severity[rule['Severity']] |lower }}
     tags:
         - {{ rule['STIG ID'] }}
         - {{ cat_severity[rule['Severity']] }}

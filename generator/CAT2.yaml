@@ -2,29 +2,6 @@
 
 - name: "MEDIUM | CNTR-OS-000010 | PATCH | OpenShift must use TLS 1.2 or greater for secure container image transport from trusted sources."
   block:
-  - name: "MEDIUM | CNTR-OS-000010 | PATCH | OpenShift must use TLS 1.2 or greater for secure container image transport from trusted sources. | Check"
-    debug:
-        msg: "Verify that no insecure registries are configured by executing the following:
-
-oc get image.config.openshift.io/cluster -ojsonpath='{.spec.allowedRegistriesForImport}' | jq -r '.[] | select(.insecure == true)'
-
-If the above query finds any registries, this is a finding. Empty output is not a finding.
-
-Verify that no insecure registries are configured by executing the following:
-
-oc get image.config.openshift.io/cluster -ojsonpath='{.spec.registrySources.insecureRegistries}'  
-
-If the above query returns anything, then this is a finding. Empty output is not a finding."
-    when:
-        - cntr_os_000010
-    tags:
-        - CNTR-OS-000010
-        - CAT2
-        - CCI-000068
-        - SRG-APP-000014-CTR-000035
-        - SV-257505r921458_rule
-        - V-257505
-
   - name: "MEDIUM | CNTR-OS-000010 | PATCH | OpenShift must use TLS 1.2 or greater for secure container image transport from trusted sources. | Fix"
     debug:
         msg: "Remove insecure registries from the cluster's image registry configuration by executing the following:
@@ -36,6 +13,7 @@ Edit or remove any registries where insecure is set to true or are listed under 
 Refer to https://docs.openshift.com/container-platform/4.8/openshift_images/image-configuration.html for more details on configuring registries in OpenShift."
     when:
         - cntr_os_000010
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000010
         - CAT2
@@ -46,39 +24,6 @@ Refer to https://docs.openshift.com/container-platform/4.8/openshift_images/imag
 
 - name: "MEDIUM | CNTR-OS-000020 | PATCH | OpenShift must use TLS 1.2 or greater for secure communication."
   block:
-  - name: "MEDIUM | CNTR-OS-000020 | PATCH | OpenShift must use TLS 1.2 or greater for secure communication. | Check"
-    debug:
-        msg: "Verify the TLS Security Profile is not set to a profile that does not enforce TLS 1.2 or above. 
-
-View the TLS security profile for the ingress controllers by executing the following:
-
-oc get --all-namespaces ingresscontrollers.operator.openshift.io -ocustom-columns="NAME":.metadata.name,"NAMESPACE":.metadata.namespace,"TLS PROFILE":.spec.tlsSecurityProfile
-
-View the TLS security profile for the control plane by executing the following:
-
-oc get APIServer cluster -ocustom-columns="TLS PROFILE":.spec.tlsSecurityProfile
-
-View the TLS profile for the Kubelet by executing the following:
-
-oc get kubeletconfigs -ocustom-columns="NAME":.metadata.name,"TLS PROFILE":.spec.tlsSecurityProfile
-
-If any of the above returns a TLS profile of "Old", this is a finding.
-
-If any of the above returns a TLS profile of "Custom" and the minTLSVersion is not set to "VersionTLS12" or greater, this is a finding.
-
-If the above returns "<none>" TLS profile, this is not a finding as the TLS profile defaults to "Intermediate".
-
-If the kubelet TLS profile check does not return any kubeletconfigs, this is not a finding as the default OCP installation uses defaults only."
-    when:
-        - cntr_os_000020
-    tags:
-        - CNTR-OS-000020
-        - CAT2
-        - CCI-000068
-        - SRG-APP-000014-CTR-000040
-        - SV-257506r921461_rule
-        - V-257506
-
   - name: "MEDIUM | CNTR-OS-000020 | PATCH | OpenShift must use TLS 1.2 or greater for secure communication. | Fix"
     debug:
         msg: "Edit each resource and set the TLS Security Profile to Intermediate by executing the following:
@@ -124,6 +69,7 @@ spec:
     type: Intermediate"
     when:
         - cntr_os_000020
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000020
         - CAT2
@@ -134,23 +80,6 @@ spec:
 
 - name: "MEDIUM | CNTR-OS-000030 | PATCH | OpenShift must use a centralized user management solution to support account management functions."
   block:
-  - name: "MEDIUM | CNTR-OS-000030 | PATCH | OpenShift must use a centralized user management solution to support account management functions. | Check"
-    debug:
-        msg: "Verify the authentication operator is configured to use either an LDAP or a OpenIDConnect provider by executing the following:
-
-oc get oauth cluster -o jsonpath="{.spec.identityProviders[*].type}{'\n'}"
-
-If the output lists any other type besides LDAP or OpenID, this is a finding."
-    when:
-        - cntr_os_000030
-    tags:
-        - CNTR-OS-000030
-        - CAT2
-        - CCI-000015
-        - SRG-APP-000023-CTR-000055
-        - SV-257507r921464_rule
-        - V-257507
-
   - name: "MEDIUM | CNTR-OS-000030 | PATCH | OpenShift must use a centralized user management solution to support account management functions. | Fix"
     debug:
         msg: "Configure OpenShift to use an appropriate Identity Provider. Do not use HTPasswd. Use either LDAP(AD), OpenIDConnect, or an approved identity provider.
@@ -243,6 +172,7 @@ oc apply -f ldapidp.yaml
 Note: For more information on configuring an OpenID provider, refer to https://docs.openshift.com/container-platform/4.8/authentication/identity_providers/configuring-oidc-identity-provider.html."
     when:
         - cntr_os_000030
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000030
         - CAT2
@@ -253,32 +183,6 @@ Note: For more information on configuring an OpenID provider, refer to https://d
 
 - name: "MEDIUM | CNTR-OS-000040 | PATCH | The kubeadmin account must be disabled."
   block:
-  - name: "MEDIUM | CNTR-OS-000040 | PATCH | The kubeadmin account must be disabled. | Check"
-    debug:
-        msg: "Verify the kubeadmin account is disabled by executing the following:
-
-oc get secrets kubeadmin -n kube-system
-
-If the command returns an error, the secret was not found, and this is not a finding.
-
-(Example output:
-Error from server (NotFound): secrets "kubeadmin" not found)
-
-If the command returns a listing that includes the kubeadmin secret, its type, the data count, and age, this is a finding.
-
-(Example Output for not a finding: 
-NAME        TYPE     DATA   AGE
-kubeadmin   Opaque   1      6h3m)"
-    when:
-        - cntr_os_000040
-    tags:
-        - CNTR-OS-000040
-        - CAT2
-        - CCI-000015
-        - SRG-APP-000023-CTR-000055
-        - SV-257508r921467_rule
-        - V-257508
-
   - name: "MEDIUM | CNTR-OS-000040 | PATCH | The kubeadmin account must be disabled. | Fix"
     debug:
         msg: "If an alternative IDP is already configured and an administrative user exists with the role of cluster-admin, disable the kubeadmin account by running the following command as a cluster administrator:
@@ -286,6 +190,7 @@ kubeadmin   Opaque   1      6h3m)"
 oc delete secrets kubeadmin -n kube-system"
     when:
         - cntr_os_000040
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000040
         - CAT2
@@ -296,28 +201,6 @@ oc delete secrets kubeadmin -n kube-system"
 
 - name: "MEDIUM | CNTR-OS-000050 | PATCH | OpenShift must automatically audit account creation."
   block:
-  - name: "MEDIUM | CNTR-OS-000050 | PATCH | OpenShift must automatically audit account creation. | Check"
-    debug:
-        msg: "Verify Red Hat Enterprise Linux CoreOS (RHCOS) generates audit records for all account creations, modifications, disabling, and termination events that affect "/etc/shadow".
-
-Logging on as administrator, check the auditing rules in "/etc/audit/audit.rules" by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME: "; grep /etc/shadow /etc/audit/audit.rules /etc/audit/rules.d/*'; done
-
-(Example output:
--w /etc/shadow -p wa -k identity)
-
-If the command does not return a line, or the line is commented out, this is a finding."
-    when:
-        - cntr_os_000050
-    tags:
-        - CNTR-OS-000050
-        - CAT2
-        - CCI-000018
-        - SRG-APP-000026-CTR-000070
-        - SV-257509r921470_rule
-        - V-257509
-
   - name: "MEDIUM | CNTR-OS-000050 | PATCH | OpenShift must automatically audit account creation. | Fix"
     debug:
         msg: "Apply the machine config using the following command:
@@ -369,6 +252,7 @@ spec:
 done"
     when:
         - cntr_os_000050
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000050
         - CAT2
@@ -379,23 +263,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000060 | PATCH | OpenShift must automatically audit account modification."
   block:
-  - name: "MEDIUM | CNTR-OS-000060 | PATCH | OpenShift must automatically audit account modification. | Check"
-    debug:
-        msg: "Verify for each of the files that contain account information the system is configured to emit an audit event in case of a write by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; for f in /etc/passwd /etc/group /etc/gshadow /etc/security/opasswd /etc/shadow /etc/sudoers /etc/sudoers.d/; do grep -q "\-w $f \-p wa \-k" /etc/audit/audit.rules || echo "rule for $f not found"; done' 2>/dev/null; done
-
-If for any of the files a line saying "rule for $filename not found" is printed, this is a finding."
-    when:
-        - cntr_os_000060
-    tags:
-        - CNTR-OS-000060
-        - CAT2
-        - CCI-001403
-        - SRG-APP-000027-CTR-000075
-        - SV-257510r921473_rule
-        - V-257510
-
   - name: "MEDIUM | CNTR-OS-000060 | PATCH | OpenShift must automatically audit account modification. | Fix"
     debug:
         msg: "Apply the machine config using the following command:
@@ -447,6 +314,7 @@ spec:
 done"
     when:
         - cntr_os_000060
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000060
         - CAT2
@@ -457,31 +325,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000070 | PATCH | OpenShift must generate audit rules to capture account related actions."
   block:
-  - name: "MEDIUM | CNTR-OS-000070 | PATCH | OpenShift must generate audit rules to capture account related actions. | Check"
-    debug:
-        msg: "Verify the audit rules capture account creation, modification, disabling, removal, and enabling actions by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e user-modify -e group-modify -e audit_rules_usergroup_modification /etc/audit/rules.d/* /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--w /etc/group -p wa -k audit_rules_usergroup_modification
--w /etc/gshadow -p wa -k audit_rules_usergroup_modification
--w /etc/security/opasswd -p wa -k audit_rules_usergroup_modification
--w /etc/passwd -p wa -k audit_rules_usergroup_modification
--w /etc/shadow -p wa -k audit_rules_usergroup_modification
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000070
-    tags:
-        - CNTR-OS-000070
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000028-CTR-000080
-        - SV-257511r921476_rule
-        - V-257511
-
   - name: "MEDIUM | CNTR-OS-000070 | PATCH | OpenShift must generate audit rules to capture account related actions. | Fix"
     debug:
         msg: "Apply the machine config using the following command:
@@ -533,6 +376,7 @@ spec:
 done"
     when:
         - cntr_os_000070
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000070
         - CAT2
@@ -543,56 +387,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000080 | PATCH | Open Shift must automatically audit account removal actions."
   block:
-  - name: "MEDIUM | CNTR-OS-000080 | PATCH | Open Shift must automatically audit account removal actions. | Check"
-    debug:
-        msg: "Verify the audit rules capture the execution of setuid and setgid binaries by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e key=privileged /etc/audit/audit.rules || echo "not found"' 2>/dev/null; done
-
-If "not found" is printed, this is a finding.
-
-Confirm the following rules exist on each node:
-
--a always,exit -S all -F path=/usr/libexec/dbus-1/dbus-daemon-launch-helper -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/sbin/grub2-set-bootflag -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/openssh/ssh-keysign -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/chage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/fusermount3 -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/fusermount -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/gpasswd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/mount -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/newgrp -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/passwd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/pkexec -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/sudo -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/su -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/umount -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/bin/write -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/sssd/krb5_child -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/sssd/ldap_child -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/sssd/proxy_child -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/sssd/selinux_child -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/libexec/utempter -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/lib/polkit-1/polkit-agent-helper-1 -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/sbin/mount.nfs -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/sbin/pam_timestamp_check -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -S all -F path=/usr/sbin/unix_chkpwd -F auid>=1000 -F auid!=unset -F key=privileged
-
-To find all setuid binaries on the system, execute the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; find / -xdev -type f -perm -4000 -o -type f -perm -2000 2>/dev/null'; done
-
-If any setuid binary does not have a corresponding audit rule, this is a finding."
-    when:
-        - cntr_os_000080
-    tags:
-        - CNTR-OS-000080
-        - CAT2
-        - CCI-001405
-        - SRG-APP-000029-CTR-000085
-        - SV-257512r921479_rule
-        - V-257512
-
   - name: "MEDIUM | CNTR-OS-000080 | PATCH | Open Shift must automatically audit account removal actions. | Fix"
     debug:
         msg: "Apply the machine config by executing the following:
@@ -719,6 +513,7 @@ spec:
 done"
     when:
         - cntr_os_000080
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000080
         - CAT2
@@ -729,23 +524,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000100 | PATCH | OpenShift must enforce network policy on the namespace for controlling the flow of information within the container platform based on organization-defined information flow control policies."
   block:
-  - name: "MEDIUM | CNTR-OS-000100 | PATCH | OpenShift must enforce network policy on the namespace for controlling the flow of information within the container platform based on organization-defined information flow control policies. | Check"
-    debug:
-        msg: "Verify that each user namespace has a Network Policy by executing the following:
-
-for ns in $(oc get namespaces -ojson | jq -r '.items[] | select((.metadata.name | startswith("openshift") | not) and (.metadata.name | startswith("kube-") | not) and .metadata.name != "default") | .metadata.name '); do oc get networkpolicy -n$ns; done
-
-If the above returns any lines saying "No resources found in <PROJECT> namespace.", this is a finding. Empty output is not a finding."
-    when:
-        - cntr_os_000100
-    tags:
-        - CNTR-OS-000100
-        - CAT2
-        - CCI-001368
-        - SRG-APP-000038-CTR-000105
-        - SV-257514r921485_rule
-        - V-257514
-
   - name: "MEDIUM | CNTR-OS-000100 | PATCH | OpenShift must enforce network policy on the namespace for controlling the flow of information within the container platform based on organization-defined information flow control policies. | Fix"
     debug:
         msg: "Add a Network Policy to an existing project namespace by performing the following steps:
@@ -770,6 +548,7 @@ oc apply -f <YOURFILE>.yaml -n <NAMESPACE>
 Details regarding the configuration of resource Network Policy can be reviewed at https://docs.openshift.com/container-platform/4.12/networking/network_policy/about-network-policy.html."
     when:
         - cntr_os_000100
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000100
         - CAT2
@@ -780,29 +559,6 @@ Details regarding the configuration of resource Network Policy can be reviewed a
 
 - name: "MEDIUM | CNTR-OS-000110 | PATCH | OpenShift must enforce approved authorizations for controlling the flow of information within the container platform based on organization-defined information flow control policies."
   block:
-  - name: "MEDIUM | CNTR-OS-000110 | PATCH | OpenShift must enforce approved authorizations for controlling the flow of information within the container platform based on organization-defined information flow control policies. | Check"
-    debug:
-        msg: "Check for Network Policy. Verify a default project template is defined by executing the following:
-
-oc get project.config.openshift.io/cluster -o jsonpath="{.spec.projectRequestTemplate.name}"
-
-If no project request template is in use by the project config, this is a finding.
-
-Verify the project request template creates a Network Policy:
-
-oc get templates/<PROJECT-REQUEST-TEMPLATE> -n openshift-config -o jsonpath="{.objects[?(.kind=='NetworkPolicy')]}{'\n'}"
-
-Replace <PROJECT-REQUEST-TEMPLATE> with the name of the project request template returned from the earlier query. If the project template is not defined, or there are no Network Policy definitions in it, this is a finding."
-    when:
-        - cntr_os_000110
-    tags:
-        - CNTR-OS-000110
-        - CAT2
-        - CCI-001414
-        - SRG-APP-000039-CTR-000110
-        - SV-257515r921488_rule
-        - V-257515
-
   - name: "MEDIUM | CNTR-OS-000110 | PATCH | OpenShift must enforce approved authorizations for controlling the flow of information within the container platform based on organization-defined information flow control policies. | Fix"
     debug:
         msg: "Configure a default network policy as necessary to protect the flow of information by performing the following steps:
@@ -848,6 +604,7 @@ oc patch project.config.openshift.io/cluster --type=merge -p '{"spec":{"projectR
 For additional information regarding network policies, refer to https://docs.openshift.com/container-platform/4.8/networking/network_policy/about-network-policy.html."
     when:
         - cntr_os_000110
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000110
         - CAT2
@@ -858,23 +615,6 @@ For additional information regarding network policies, refer to https://docs.ope
 
 - name: "MEDIUM | CNTR-OS-000150 | PATCH | OpenShift must generate audit records for all DOD-defined auditable events within all components in the platform."
   block:
-  - name: "MEDIUM | CNTR-OS-000150 | PATCH | OpenShift must generate audit records for all DOD-defined auditable events within all components in the platform. | Check"
-    debug:
-        msg: "To determine at what level the OpenShift audit policy logging verbosity is configured, as a cluster-administrator:execute the following command:
-
-oc get apiserver.config.openshift.io/cluster -ojsonpath='{.spec.audit.profile}'
-
-If the output from the options does not return WriteRequestBodies or AllRequestBodies, this is a finding."
-    when:
-        - cntr_os_000150
-    tags:
-        - CNTR-OS-000150
-        - CAT2
-        - CCI-000135
-        - SRG-APP-000089-CTR-000150
-        - SV-257517r921494_rule
-        - V-257517
-
   - name: "MEDIUM | CNTR-OS-000150 | PATCH | OpenShift must generate audit records for all DOD-defined auditable events within all components in the platform. | Fix"
     debug:
         msg: "As the cluster administrator, update the APIServer.config.openshift.io/cluster object to set the profile to the defined level of detail. For example, to configure the profile to WriteRequestBodies, meaning that all write requests to any API server object are logged in their entirety, by executing the following:
@@ -882,6 +622,7 @@ If the output from the options does not return WriteRequestBodies or AllRequestB
 oc patch apiserver.config.openshift.io/cluster --type=merge -p '{"spec": {"audit": {"profile": "WriteRequestBodies"}}}'"
     when:
         - cntr_os_000150
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000150
         - CAT2
@@ -892,76 +633,6 @@ oc patch apiserver.config.openshift.io/cluster --type=merge -p '{"spec": {"audit
 
 - name: "MEDIUM | CNTR-OS-000160 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to access privileges occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000160 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to access privileges occur. | Check"
-    debug:
-        msg: "Verify OpenShift is configured to generate audit records when successful/unsuccessful attempts to access or delete security objects, security levels, and privileges occur by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "key=perm_mod" -e "key=unsuccessful-create"  -e "key=unsuccessful-modification" -e "key=unsuccessful-access" /etc/audit/audit.rules|| echo "not found"' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
--a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S open -F a1&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S open -F a1&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S open -F a1&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S open -F a1&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S open -F a1&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S open -F a1&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S open -F a1&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S open -F a1&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat,open_by_handle_at -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat,open_by_handle_at -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat,open_by_handle_at -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat,open_by_handle_at -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b32 -S creat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S creat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S creat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S creat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
-
-On each node, if the above rules are not listed, or the return is "not found", this is a finding."
-    when:
-        - cntr_os_000160
-    tags:
-        - CNTR-OS-000160
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000091-CTR-000160
-        - SV-257518r921497_rule
-        - V-257518
-
   - name: "MEDIUM | CNTR-OS-000160 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to access privileges occur. | Fix"
     debug:
         msg: "Apply the machine config to generate audit records by executing following:
@@ -1053,6 +724,7 @@ spec:
 done"
     when:
         - cntr_os_000160
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000160
         - CAT2
@@ -1063,23 +735,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000180 | PATCH | All audit records must identify what type of event has occurred within OpenShift."
   block:
-  - name: "MEDIUM | CNTR-OS-000180 | PATCH | All audit records must identify what type of event has occurred within OpenShift. | Check"
-    debug:
-        msg: "Verify the audit service is enabled and active by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; systemctl is-enabled auditd.service; systemctl is-active auditd.service' 2>/dev/null; done
-
-If the auditd service is not "enabled" and "active" this is a finding."
-    when:
-        - cntr_os_000180
-    tags:
-        - CNTR-OS-000180
-        - CAT2
-        - CCI-000130
-        - SRG-APP-000095-CTR-000170
-        - SV-257520r921503_rule
-        - V-257520
-
   - name: "MEDIUM | CNTR-OS-000180 | PATCH | All audit records must identify what type of event has occurred within OpenShift. | Fix"
     debug:
         msg: "Apply the machine config setting auditd to active and enabled by executing the following:
@@ -1103,6 +758,7 @@ spec:
 done"
     when:
         - cntr_os_000180
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000180
         - CAT2
@@ -1113,39 +769,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000190 | PATCH | OpenShift audit records must have a date and time association with all events."
   block:
-  - name: "MEDIUM | CNTR-OS-000190 | PATCH | OpenShift audit records must have a date and time association with all events. | Check"
-    debug:
-        msg: "1. Verify Red Hat Enterprise Linux CoreOS (RHCOS) Audit Daemon is configured to resolve audit information before writing to disk by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep "log_format" /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the "log_format" option is not "ENRICHED", or the line is missing or commented out, this is a finding.
-
-2. Verify RHCOS takes the appropriate action when an audit processing failure occurs.
-
-Verify RHCOS takes the appropriate action when an audit processing failure occurs by executing following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep disk_error_action /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the value of the "disk_error_action" option is not "SYSLOG", "SINGLE", or "HALT", or the line is missing or commented out, ask the system administrator to indicate how the system takes appropriate action when an audit process failure occurs. If there is no evidence of appropriate action, this is a finding.
-
-3. Verify the SA and ISSO (at a minimum) are notified when the audit storage volume is full.
-
-Check which action RHEL takes when the audit storage volume is full by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep max_log_file_action /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the value of the "max_log_file_action" option is set to "ignore", "rotate", or "suspend", or the line is missing or commented out, ask the system administrator to indicate how the system takes appropriate action when an audit storage volume is full. If there is no evidence of appropriate action, this is a finding."
-    when:
-        - cntr_os_000190
-    tags:
-        - CNTR-OS-000190
-        - CAT2
-        - CCI-000131
-        - SRG-APP-000096-CTR-000175
-        - SV-257521r921506_rule
-        - V-257521
-
   - name: "MEDIUM | CNTR-OS-000190 | PATCH | OpenShift audit records must have a date and time association with all events. | Fix"
     debug:
         msg: "Apply the machine config by executing the following:
@@ -1172,6 +795,7 @@ spec:
 done"
     when:
         - cntr_os_000190
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000190
         - CAT2
@@ -1182,37 +806,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000200 | PATCH | All audit records must generate the event results within OpenShift."
   block:
-  - name: "MEDIUM | CNTR-OS-000200 | PATCH | All audit records must generate the event results within OpenShift. | Check"
-    debug:
-        msg: "1. Verify Red Hat Enterprise Linux CoreOS (RHCOS) Audit Daemon is configured to resolve audit information before writing to disk, by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep "log_format" /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the "log_format" option is not "ENRICHED", or the line is missing or commented out, this is a finding.
-
-2. Verify RHCOS takes the appropriate action when an audit processing failure occurs by executing following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep disk_error_action /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the value of the "disk_error_action" option is not "SYSLOG", "SINGLE", or "HALT", or the line is missing, or commented out, ask the system administrator to indicate how the system takes appropriate action when an audit process failure occurs. If there is no evidence of appropriate action, this is a finding.
-
-3. Verify the SA and ISSO (at a minimum) are notified when the audit storage volume is full.
-
-Check which action RHEL takes when the audit storage volume is full by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep max_log_file_action /etc/audit/auditd.conf' 2>/dev/null; done
-
-If the value of the "max_log_file_action" option is set to "ignore", "rotate", or "suspend", or the line is missing or commented out, ask the system administrator to indicate how the system takes appropriate action when an audit storage volume is full. If there is no evidence of appropriate action, this is a finding."
-    when:
-        - cntr_os_000200
-    tags:
-        - CNTR-OS-000200
-        - CAT2
-        - CCI-000132
-        - SRG-APP-000099-CTR-000190
-        - SV-257522r921509_rule
-        - V-257522
-
   - name: "MEDIUM | CNTR-OS-000200 | PATCH | All audit records must generate the event results within OpenShift. | Fix"
     debug:
         msg: "Apply the machine config by executing the following:
@@ -1239,6 +832,7 @@ spec:
 done"
     when:
         - cntr_os_000200
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000200
         - CAT2
@@ -1249,26 +843,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000210 | PATCH | OpenShift must take appropriate action upon an audit failure."
   block:
-  - name: "MEDIUM | CNTR-OS-000210 | PATCH | OpenShift must take appropriate action upon an audit failure. | Check"
-    debug:
-        msg: "Verify there is a Prometheus rule to watch for audit events by executing the following:
-
-oc get prometheusrule -o yaml --all-namespaces | grep apiserver_audit
-
-Output:
-         sum by (apiserver,instance)(rate(apiserver_audit_error_total{apiserver=~".+-apiserver"}[5m])) / sum by (apiserver,instance) (rate(apiserver_audit_event_total{apiserver=~".+-apiserver"}[5m])) > 0
-
-If the output above is not displayed, this is a finding."
-    when:
-        - cntr_os_000210
-    tags:
-        - CNTR-OS-000210
-        - CAT2
-        - CCI-000140
-        - SRG-APP-000109-CTR-000215
-        - SV-257523r921512_rule
-        - V-257523
-
   - name: "MEDIUM | CNTR-OS-000210 | PATCH | OpenShift must take appropriate action upon an audit failure. | Fix"
     debug:
         msg: "Apply the following Prometheus rule by executing the following:
@@ -1300,6 +874,7 @@ spec:
 EOF"
     when:
         - cntr_os_000210
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000210
         - CAT2
@@ -1310,43 +885,6 @@ EOF"
 
 - name: "MEDIUM | CNTR-OS-000220 | PATCH | OpenShift components must provide the ability to send audit logs to a central enterprise repository for review and analysis."
   block:
-  - name: "MEDIUM | CNTR-OS-000220 | PATCH | OpenShift components must provide the ability to send audit logs to a central enterprise repository for review and analysis. | Check"
-    debug:
-        msg: "Determine if cluster log forwarding is configured.
-
-1. Verify the cluster-logging operator is installed by executing the following:
-
-oc get subscription/cluster-logging -n openshift-logging
-(Example Output:
-NAME              PACKAGE           SOURCE             CHANNEL
-cluster-logging   cluster-logging   redhat-operators   stable
-)
-
-If the cluster-logging operator is not present, this is a finding.
-
-2. List the cluster log forwarders defined by executing the following:
-
-oc get clusterlogforwarder -n openshift-logging
-
-If there are no clusterlogforwarders defined, this is a finding.
-
-3. For each cluster log forwarder listed above, view the configuration details by executing the following:
- 
-oc describe clusterlogforwarder/<CLF_NAME> -n openshift-logging
-
-Review the details of the cluster log forwarder.
-
-If the configuration is not set to forward logs the organization's centralized logging service, this is a finding."
-    when:
-        - cntr_os_000220
-    tags:
-        - CNTR-OS-000220
-        - CAT2
-        - CCI-000154
-        - SRG-APP-000111-CTR-000220
-        - SV-257524r921515_rule
-        - V-257524
-
   - name: "MEDIUM | CNTR-OS-000220 | PATCH | OpenShift components must provide the ability to send audit logs to a central enterprise repository for review and analysis. | Fix"
     debug:
         msg: "To configure log forwarding, the OpenShift Cluster Logging operator first must be installed, and then the Cluster Log Forwarder is configured to forward logs to a centralized log aggregation service.
@@ -1468,6 +1006,7 @@ Note that many log forwarding destinations are supported, and the fix does not r
 https://docs.openshift.com/container-platform/4.8/logging/cluster-logging-external.html"
     when:
         - cntr_os_000220
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000220
         - CAT2
@@ -1478,23 +1017,6 @@ https://docs.openshift.com/container-platform/4.8/logging/cluster-logging-extern
 
 - name: "MEDIUM | CNTR-OS-000230 | PATCH | OpenShift must use internal system clocks to generate audit record time stamps."
   block:
-  - name: "MEDIUM | CNTR-OS-000230 | PATCH | OpenShift must use internal system clocks to generate audit record time stamps. | Check"
-    debug:
-        msg: "Verify the chronyd service is enabled and active by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; systemctl is-enabled chronyd.service; systemctl is-active chronyd.service' 2>/dev/null; done
-
-If the auditd service is not "enabled" and "active", this is a finding."
-    when:
-        - cntr_os_000230
-    tags:
-        - CNTR-OS-000230
-        - CAT2
-        - CCI-000159
-        - SRG-APP-000116-CTR-000235
-        - SV-257525r921518_rule
-        - V-257525
-
   - name: "MEDIUM | CNTR-OS-000230 | PATCH | OpenShift must use internal system clocks to generate audit record time stamps. | Fix"
     debug:
         msg: "Apply the machine config to use internal system clocks for audit records by executing the following:
@@ -1518,6 +1040,7 @@ spec:
 done"
     when:
         - cntr_os_000230
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000230
         - CAT2
@@ -1528,26 +1051,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000240 | PATCH | The Red Hat Enterprise Linux CoreOS (RHCOS) chrony Daemon must use multiple NTP servers to generate audit record time stamps."
   block:
-  - name: "MEDIUM | CNTR-OS-000240 | PATCH | The Red Hat Enterprise Linux CoreOS (RHCOS) chrony Daemon must use multiple NTP servers to generate audit record time stamps. | Check"
-    debug:
-        msg: "Verify Red Hat Enterprise Linux CoreOS (RHCOS) chrony Daemon is configured to use multiple NTP servers by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep "server" /etc/chrony.d/*' 2>/dev/null; done
-
-(Sample output: server <SERVER1.EXAMPLE.COM> minpoll 4 maxpoll 10
-server <SERVER2.EXAMPLE.COM> minpoll 4 maxpoll 10)
-
-If multiple NTP servers are not configured, this is a finding."
-    when:
-        - cntr_os_000240
-    tags:
-        - CNTR-OS-000240
-        - CAT2
-        - CCI-000159
-        - SRG-APP-000116-CTR-000235
-        - SV-257526r921521_rule
-        - V-257526
-
   - name: "MEDIUM | CNTR-OS-000240 | PATCH | The Red Hat Enterprise Linux CoreOS (RHCOS) chrony Daemon must use multiple NTP servers to generate audit record time stamps. | Fix"
     debug:
         msg: "Apply the machine config by executing the following, replacing the variables in the MachineConfig with organizationally-defined NTP servers.
@@ -1584,6 +1087,7 @@ spec:
 done"
     when:
         - cntr_os_000240
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000240
         - CAT2
@@ -1594,45 +1098,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000250 | PATCH | OpenShift must protect audit logs from any type of unauthorized access."
   block:
-  - name: "MEDIUM | CNTR-OS-000250 | PATCH | OpenShift must protect audit logs from any type of unauthorized access. | Check"
-    debug:
-        msg: "Verify the audit logs have a mode of "0600" by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; stat -c "%a %n" /var/log/audit/audit.log' 2>/dev/null; done
-
-(Sample Output: 600 /var/log/audit/audit.log)
-If the audit log has a mode more permissive than "0600", this is a finding.
-
-Determine if the audit log is owned by "root" executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; ls -l /var/log/audit/audit.log' 2>/dev/null; done
-
-(Sample Output: rw------- 2 root root 23 Jun 11 11:56 /var/log/audit/audit.log)
-If the audit log is not owned by "root", this is a finding.
-
-Verify the audit log directory is group-owned by "root" to prevent unauthorized read access by executing the following.
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; ls -ld /var/log/audit' 2>/dev/null; done
-
-(Sample Output: drw------- 2 root root 23 Jun 11 11:56 /var/log/audit)
-If the audit log directory is not group-owned by "root", this is a finding.
-
-Verify the audit log directories have a mode of "0700" by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; stat -c "%a %n" /var/log/audit' 2>/dev/null; done
-
-(Sample Output: 700 /var/log/audit)
-If the audit log directory has a mode more permissive than "0700", this is a finding."
-    when:
-        - cntr_os_000250
-    tags:
-        - CNTR-OS-000250
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257527r921524_rule
-        - V-257527
-
   - name: "MEDIUM | CNTR-OS-000250 | PATCH | OpenShift must protect audit logs from any type of unauthorized access. | Fix"
     debug:
         msg: "Correct permissions (audit logs have a mode of "0600") by executing the following:
@@ -1652,6 +1117,7 @@ Correct permissions ( audit log directories have a mode of "0700") by executing 
 for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; machine_id=$(systemd-machine-id-setup --print); chmod 700 /var/log/audit' 2>/dev/null; done"
     when:
         - cntr_os_000250
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000250
         - CAT2
@@ -1662,23 +1128,6 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 
 - name: "MEDIUM | CNTR-OS-000260 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting file permissions."
   block:
-  - name: "MEDIUM | CNTR-OS-000260 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting file permissions. | Check"
-    debug:
-        msg: "Verify the system journal file has mode "0640" or less permissive by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; machine_id=$(systemd-machine-id-setup --print); stat -c "%a %n" /var/log/journal/$machine_id/system.journal' 2>/dev/null; done
-
-If a value of "0640" or less permissive is not returned, this is a finding."
-    when:
-        - cntr_os_000260
-    tags:
-        - CNTR-OS-000260
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257528r921527_rule
-        - V-257528
-
   - name: "MEDIUM | CNTR-OS-000260 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting file permissions. | Fix"
     debug:
         msg: "Correct journal file permissions by executing the following:
@@ -1686,6 +1135,7 @@ If a value of "0640" or less permissive is not returned, this is a finding."
 for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; machine_id=$(systemd-machine-id-setup --print); chmod 640 /var/log/journal/$machine_id/system.journal' 2>/dev/null; done"
     when:
         - cntr_os_000260
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000260
         - CAT2
@@ -1696,28 +1146,6 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 
 - name: "MEDIUM | CNTR-OS-000270 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting owner permissions."
   block:
-  - name: "MEDIUM | CNTR-OS-000270 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting owner permissions. | Check"
-    debug:
-        msg: "Verify the "system journal" file is group-owned by systemd-journal and owned by root by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; machine_id=$(systemd-machine-id-setup --print); stat -c "%U %G" /var/log/journal/$machine_id/system.journal' 2>/dev/null; done
-
-Example output:
-ip-10-0-150-1 root systemd-journal
-
-If "root" is not returned as the owner, this is a finding.
-
-If "systemd-journald" is not returned as the group owner, this is a finding."
-    when:
-        - cntr_os_000270
-    tags:
-        - CNTR-OS-000270
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257529r921530_rule
-        - V-257529
-
   - name: "MEDIUM | CNTR-OS-000270 | PATCH | OpenShift must protect system journal file from any type of unauthorized access by setting owner permissions. | Fix"
     debug:
         msg: "Correct journal file ownership by executing the following:
@@ -1725,6 +1153,7 @@ If "systemd-journald" is not returned as the group owner, this is a finding."
 for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; machine_id=$(systemd-machine-id-setup --print); chown root:systemd-journal /var/log/journal/$machine_id/system.journal' 2>/dev/null; done"
     when:
         - cntr_os_000270
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000270
         - CAT2
@@ -1735,23 +1164,6 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 
 - name: "MEDIUM | CNTR-OS-000280 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting file permissions."
   block:
-  - name: "MEDIUM | CNTR-OS-000280 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting file permissions. | Check"
-    debug:
-        msg: "Verify the "/var/log" directory has a mode of "0755" or less by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; stat -c "%a %n" /var/log' 2>/dev/null; done
-
-If a value of "0755" or less permissive is not returned, this is a finding."
-    when:
-        - cntr_os_000280
-    tags:
-        - CNTR-OS-000280
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257530r921533_rule
-        - V-257530
-
   - name: "MEDIUM | CNTR-OS-000280 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting file permissions. | Fix"
     debug:
         msg: "Correct log directory permissions by executing the following:
@@ -1759,6 +1171,7 @@ If a value of "0755" or less permissive is not returned, this is a finding."
 for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; chmod 755 /var/log/' 2>/dev/null; done"
     when:
         - cntr_os_000280
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000280
         - CAT2
@@ -1769,23 +1182,6 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 
 - name: "MEDIUM | CNTR-OS-000290 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting owner permissions."
   block:
-  - name: "MEDIUM | CNTR-OS-000290 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting owner permissions. | Check"
-    debug:
-        msg: "Verify the "/var/log" directory is group-owned by root by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; stat -c "%G" /var/log' 2>/dev/null; done
-
-If "root" is not returned as a result, this is a finding."
-    when:
-        - cntr_os_000290
-    tags:
-        - CNTR-OS-000290
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257531r921536_rule
-        - V-257531
-
   - name: "MEDIUM | CNTR-OS-000290 | PATCH | OpenShift must protect log directory from any type of unauthorized access by setting owner permissions. | Fix"
     debug:
         msg: "Correct log directory ownership by executing the following:
@@ -1793,6 +1189,7 @@ If "root" is not returned as a result, this is a finding."
  for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; chown root:root /var/log/' 2>/dev/null; done"
     when:
         - cntr_os_000290
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000290
         - CAT2
@@ -1803,36 +1200,6 @@ If "root" is not returned as a result, this is a finding."
 
 - name: "MEDIUM | CNTR-OS-000300 | PATCH | OpenShift must protect pod log files from any type of unauthorized access by setting owner permissions."
   block:
-  - name: "MEDIUM | CNTR-OS-000300 | PATCH | OpenShift must protect pod log files from any type of unauthorized access by setting owner permissions. | Check"
-    debug:
-        msg: "Verify the permissions and ownership of files located under "/var/log/pods" that store the output of pods are set to protect from unauthorized access.
-
-1. Verify the files are readable only by the owner by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; find /var/log/pods/ -type f \( -perm /022 -o -perm /044 \)' 2>/dev/null; done
-
-If any files are returned, this is a finding.
-
-2. Verify files are group-owned by root and owned by root by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; find /var/log/pods/ -type f \! -user 0' 2>/dev/null; done
-
-(Example output:
-ip-10-0-150-1 root root)
-
-If "root" is not returned as the owner, this is a finding.
-
-If "root" is not returned as the group owner, this is a finding."
-    when:
-        - cntr_os_000300
-    tags:
-        - CNTR-OS-000300
-        - CAT2
-        - CCI-000162
-        - SRG-APP-000118-CTR-000240
-        - SV-257532r921539_rule
-        - V-257532
-
   - name: "MEDIUM | CNTR-OS-000300 | PATCH | OpenShift must protect pod log files from any type of unauthorized access by setting owner permissions. | Fix"
     debug:
         msg: "Change the permissions and ownership of files located under "/var/log/pods" to protect from unauthorized access.
@@ -1846,6 +1213,7 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; find /var/log/pods/ -type f \! -user 0 | xargs -r chown root:root' 2>/dev/null; done"
     when:
         - cntr_os_000300
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000300
         - CAT2
@@ -1856,23 +1224,6 @@ for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -
 
 - name: "MEDIUM | CNTR-OS-000310 | PATCH | OpenShift must protect audit information from unauthorized modification."
   block:
-  - name: "MEDIUM | CNTR-OS-000310 | PATCH | OpenShift must protect audit information from unauthorized modification. | Check"
-    debug:
-        msg: "Verify the audit system prevents unauthorized changes by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n ""$HOSTNAME ""; grep "^\-e\s2\s*$" /etc/audit/audit.rules /etc/audit/rules.d/*  || echo "not found"' 2>/dev/null; done
-
-If the check returns "not found", the audit system is not set to be immutable by adding the ""-e 2"" option to the ""/etc/audit/audit.rules"", this is a finding."
-    when:
-        - cntr_os_000310
-    tags:
-        - CNTR-OS-000310
-        - CAT2
-        - CCI-000163
-        - SRG-APP-000119-CTR-000245
-        - SV-257533r921542_rule
-        - V-257533
-
   - name: "MEDIUM | CNTR-OS-000310 | PATCH | OpenShift must protect audit information from unauthorized modification. | Fix"
     debug:
         msg: "Apply the machine config to prevent unauthorized changes by executing the following:
@@ -1899,6 +1250,7 @@ spec:
 done"
     when:
         - cntr_os_000310
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000310
         - CAT2
@@ -1909,23 +1261,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000320 | PATCH | OpenShift must prevent unauthorized changes to logon UIDs."
   block:
-  - name: "MEDIUM | CNTR-OS-000320 | PATCH | OpenShift must prevent unauthorized changes to logon UIDs. | Check"
-    debug:
-        msg: "Verify the audit system prevents unauthorized changes to logon UIDs by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -i immutable /etc/audit/audit.rules || echo "not found"' 2>/dev/null; done
-
-If the login UIDs are not set to be immutable by adding the "--loginuid-immutable" option to the "/etc/audit/audit.rules", this is a finding."
-    when:
-        - cntr_os_000320
-    tags:
-        - CNTR-OS-000320
-        - CAT2
-        - CCI-001493
-        - SRG-APP-000121-CTR-000255
-        - SV-257534r921545_rule
-        - V-257534
-
   - name: "MEDIUM | CNTR-OS-000320 | PATCH | OpenShift must prevent unauthorized changes to logon UIDs. | Fix"
     debug:
         msg: "Apply the machine config to prevent changes to logon UIDs by executing the following:
@@ -1952,6 +1287,7 @@ spec:
 done"
     when:
         - cntr_os_000320
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000320
         - CAT2
@@ -1962,25 +1298,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000330 | PATCH | OpenShift must protect audit tools from unauthorized access."
   block:
-  - name: "MEDIUM | CNTR-OS-000330 | PATCH | OpenShift must protect audit tools from unauthorized access. | Check"
-    debug:
-        msg: "List the users and groups who have permission to view the cluster logging configuration by executing the following two commands:
-
-oc policy who-can view ClusterLogging -n openshift-logging
-
-oc policy who-can view ClusterLoggingForwarder -n openshift-logging
-
-Review the list of users and groups who have view access to the cluster logging resources. If any user or group listed must not have access to view the cluster logging resources, this is a finding."
-    when:
-        - cntr_os_000330
-    tags:
-        - CNTR-OS-000330
-        - CAT2
-        - CCI-001493
-        - SRG-APP-000121-CTR-000255
-        - SV-257535r921548_rule
-        - V-257535
-
   - name: "MEDIUM | CNTR-OS-000330 | PATCH | OpenShift must protect audit tools from unauthorized access. | Fix"
     debug:
         msg: "Remove view permissions from any unauthorized user or group by performing one or more of the following commands.
@@ -2003,6 +1320,7 @@ oc adm policy remove-cluster-role-from-group <CLUSTER_ROLE> <GROUP> -n openshift
 Note: ROLE/CLUSTER_ROLE is the role granting user view permission to resources in openshift-logging namespace."
     when:
         - cntr_os_000330
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000330
         - CAT2
@@ -2013,27 +1331,6 @@ Note: ROLE/CLUSTER_ROLE is the role granting user view permission to resources i
 
 - name: "MEDIUM | CNTR-OS-000340 | PATCH | OpenShift must use FIPS-validated cryptographic mechanisms to protect the integrity of log information."
   block:
-  - name: "MEDIUM | CNTR-OS-000340 | PATCH | OpenShift must use FIPS-validated cryptographic mechanisms to protect the integrity of log information. | Check"
-    debug:
-        msg: "Verify the Cluster Log Forwarder is using an encrypted transport by executing the following:
-
-oc get clusterlogforwarder -n openshift-logging
-
-For each Cluster Log Forwarder, run the following command to display the configuration.
-
-oc describe clusterlogforwarder <name> -n openshift-logging
-
-Review the configuration and determine if the transport is secure, such as tls:// or https://. If there are any transports configured that are not secured by TLS, this is a finding."
-    when:
-        - cntr_os_000340
-    tags:
-        - CNTR-OS-000340
-        - CAT2
-        - CCI-001350
-        - SRG-APP-000126-CTR-000275
-        - SV-257536r921551_rule
-        - V-257536
-
   - name: "MEDIUM | CNTR-OS-000340 | PATCH | OpenShift must use FIPS-validated cryptographic mechanisms to protect the integrity of log information. | Fix"
     debug:
         msg: "Edit the Cluster Log Forwarder configuration to configure TLS on the transport by executing the following:
@@ -2045,6 +1342,7 @@ For any output->url value that is not using a secure transport, edit the url to 
 For detailed information regarding configuration of the Cluster Log Forwarder, refer to https://docs.openshift.com/container-platform/4.8/logging/cluster-logging-external.html."
     when:
         - cntr_os_000340
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000340
         - CAT2
@@ -2055,48 +1353,6 @@ For detailed information regarding configuration of the Cluster Log Forwarder, r
 
 - name: "MEDIUM | CNTR-OS-000360 | PATCH | OpenShift must verify container images."
   block:
-  - name: "MEDIUM | CNTR-OS-000360 | PATCH | OpenShift must verify container images. | Check"
-    debug:
-        msg: "Determine if a policy has been put in place by running the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; cat /etc/containers/policy.json' 2>/dev/null; done
-
-If the policy is not set to "reject" by default, or the signature keys are not configure appropriately on the registries, this is a finding.
-
-The following is an example of how this will look on a system using Red Hat's public registries:
-
-  <pre>
-    {
-  "default": [{"type": "reject"}],
-  "transports": {
-    "docker": {
-      "registry.access.redhat.com": [
-        {
-          "type": "signedBy",
-          "keyType": "GPGKeys",
-          "keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
-        }
-      ],
-      "registry.redhat.io": [
-        {
-          "type": "signedBy",
-          "keyType": "GPGKeys",
-          "keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
-        }
-      ],
-
-      ...
-    }"
-    when:
-        - cntr_os_000360
-    tags:
-        - CNTR-OS-000360
-        - CAT2
-        - CCI-001749
-        - SRG-APP-000131-CTR-000285
-        - SV-257537r921554_rule
-        - V-257537
-
   - name: "MEDIUM | CNTR-OS-000360 | PATCH | OpenShift must verify container images. | Fix"
     debug:
         msg: "Configure the OpenShift Container policy to validate that image signatures are verified and enforced by executing the following:
@@ -2137,6 +1393,7 @@ spec:
 done"
     when:
         - cntr_os_000360
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000360
         - CAT2
@@ -2147,23 +1404,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000380 | PATCH | OpenShift must contain only container images for those capabilities being offered by the container platform."
   block:
-  - name: "MEDIUM | CNTR-OS-000380 | PATCH | OpenShift must contain only container images for those capabilities being offered by the container platform. | Check"
-    debug:
-        msg: "To review the container images within the container platform registry, execute the following:
-
-oc get images
-
-Review the container platform container images to validate that only container images necessary for the functionality of the information system are present. If unnecessary container images exist, this is a finding."
-    when:
-        - cntr_os_000380
-    tags:
-        - CNTR-OS-000380
-        - CAT2
-        - CCI-000381
-        - SRG-APP-000141-CTR-000320
-        - SV-257538r921557_rule
-        - V-257538
-
   - name: "MEDIUM | CNTR-OS-000380 | PATCH | OpenShift must contain only container images for those capabilities being offered by the container platform. | Fix"
     debug:
         msg: "Remove any images from the container registry that are not required for the functionality of the system by executing the following:
@@ -2171,6 +1411,7 @@ Review the container platform container images to validate that only container i
 oc delete image <IMAGE_NAME> -n <IMAGE_NAMESPACE>"
     when:
         - cntr_os_000380
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000380
         - CAT2
@@ -2181,57 +1422,6 @@ oc delete image <IMAGE_NAME> -n <IMAGE_NAMESPACE>"
 
 - name: "MEDIUM | CNTR-OS-000390 | PATCH | OpenShift runtime must enforce ports, protocols, and services that adhere to the PPSM CAL."
   block:
-  - name: "MEDIUM | CNTR-OS-000390 | PATCH | OpenShift runtime must enforce ports, protocols, and services that adhere to the PPSM CAL. | Check"
-    debug:
-        msg: "Review the OpenShift documentation and configuration.
-
-For additional information, refer to https://docs.openshift.com/container-platform/4.12/installing/installing_platform_agnostic/installing-platform-agnostic.html.
-
-1. Interview the application administrator.
-
-2. Identify the TCP/IP port numbers OpenShift is configured to use and is utilizing by using a combination of relevant OS commands and application configuration utilities.
-
-3. Identify the network ports and protocols that are used by kube-apiserver by executing the following:
-
-oc get configmap kube-apiserver-pod -n openshift-kube-apiserver -o "jsonpath={ .data['pod\.yaml'] }" | jq '..|.containerPort?' | grep -v "null"
-
-oc get configmap kube-apiserver-pod -n openshift-kube-apiserver -o "jsonpath={ .data['pod\.yaml'] }" | jq '..|.hostPort?' | grep -v "null"
-
-oc get services -A --show-labels | grep apiserver | awk '{print $6,$8}' | grep apiserver
-
-4. Identify the network ports and protocols used by kube-scheduler by executing the following:
-
-oc get configmap kube-scheduler-pod -n openshift-kube-scheduler -o "jsonpath={ .data['pod\.yaml'] }" | jq '..|.containerPort?' | grep -v "null"
-
-oc get services -A --show-labels | grep scheduler | awk '{print $6,$8}' | grep scheduler
-
-5. Identify the network ports and protocols used by kube-controller-manager by executing the following:
-
-oc get configmap kube-controller-manager-pod -n openshift-kube-controller-manager -o "jsonpath={ .data['pod\.yaml'] }" | jq '..|.containerPort?' | grep -v "null"
-
-oc get services -A --show-labels | grep kube-controller
-
-6. Identify the network ports and protocols used by etcd by executing the following:
-
-oc get configmap etcd-pod -n openshift-etcd -o "jsonpath={ .data['pod\.yaml'] }" | grep -Po '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:[0-9]+' | sort -u
-
-Review the PPSM web page at: http://www.disa.mil/Network-Services/Enterprise-Connections/PPSM.
-
-Review the PPSM Category Assurance List (CAL) directly at the following link: https://disa.deps.mil/ext/cop/iase/ppsm/Pages/cal.aspx.
-
-Verify the ports used by the OpenShift are approved by the PPSM CAL.
-
-If the ports, protocols, and services have not been registered locally, this is a finding."
-    when:
-        - cntr_os_000390
-    tags:
-        - CNTR-OS-000390
-        - CAT2
-        - CCI-000382
-        - SRG-APP-000142-CTR-000325
-        - SV-257539r921560_rule
-        - V-257539
-
   - name: "MEDIUM | CNTR-OS-000390 | PATCH | OpenShift runtime must enforce ports, protocols, and services that adhere to the PPSM CAL. | Fix"
     debug:
         msg: "Verify the accreditation documentation lists all interfaces and the ports, protocols, and services used.
@@ -2239,6 +1429,7 @@ If the ports, protocols, and services have not been registered locally, this is 
 Register OpenShift's ports, protocols, and services with PPSM."
     when:
         - cntr_os_000390
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000390
         - CAT2
@@ -2249,23 +1440,6 @@ Register OpenShift's ports, protocols, and services with PPSM."
 
 - name: "MEDIUM | CNTR-OS-000430 | PATCH | OpenShift must use multifactor authentication for network access to accounts."
   block:
-  - name: "MEDIUM | CNTR-OS-000430 | PATCH | OpenShift must use multifactor authentication for network access to accounts. | Check"
-    debug:
-        msg: "Verify the authentication operator is configured to use either an LDAP or a OpenIDConnect provider by executing the following:
-
-oc get oauth cluster -o jsonpath="{.spec.identityProviders[*].type}{'\n'}"
-
-If the output lists any other type besides LDAP or OpenID, this is a finding."
-    when:
-        - cntr_os_000430
-    tags:
-        - CNTR-OS-000430
-        - CAT2
-        - CCI-000765
-        - SRG-APP-000149-CTR-000355
-        - SV-257541r921566_rule
-        - V-257541
-
   - name: "MEDIUM | CNTR-OS-000430 | PATCH | OpenShift must use multifactor authentication for network access to accounts. | Fix"
     debug:
         msg: "Configure OpenShift to use an appropriate Identity Provider. Do not use HTPasswd. Use either LDAP(AD), OpenIDConnect, or an approved identity provider.
@@ -2360,6 +1534,7 @@ oc apply -f ldapidp.yaml
 Note: For more information on configuring an OpenID provider, refer to https://docs.openshift.com/container-platform/4.8/authentication/identity_providers/configuring-oidc-identity-provider.html."
     when:
         - cntr_os_000430
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000430
         - CAT2
@@ -2370,23 +1545,6 @@ Note: For more information on configuring an OpenID provider, refer to https://d
 
 - name: "MEDIUM | CNTR-OS-000440 | PATCH | OpenShift must use FIPS-validated SHA-1 or higher hash function to provide replay-resistant authentication mechanisms for network access to privileged accounts."
   block:
-  - name: "MEDIUM | CNTR-OS-000440 | PATCH | OpenShift must use FIPS-validated SHA-1 or higher hash function to provide replay-resistant authentication mechanisms for network access to privileged accounts. | Check"
-    debug:
-        msg: "Verify the authentication operator is configured to use a secure transport to an OpenIDConnect provider:
-
-oc get oauth cluster -o jsonpath="{.spec.identityProviders[*]}{'\n'}"
-
-If the transport is not secure (ex. HTTPS), this is a finding."
-    when:
-        - cntr_os_000440
-    tags:
-        - CNTR-OS-000440
-        - CAT2
-        - CCI-001941
-        - SRG-APP-000156-CTR-000380
-        - SV-257542r921569_rule
-        - V-257542
-
   - name: "MEDIUM | CNTR-OS-000440 | PATCH | OpenShift must use FIPS-validated SHA-1 or higher hash function to provide replay-resistant authentication mechanisms for network access to privileged accounts. | Fix"
     debug:
         msg: "Configure OpenShift to use an OpenIDConnect Identity Provider. Note: This STIG was written for OIC; do not use HTPasswd. Only use an approved identity provider.
@@ -2433,6 +1591,7 @@ oc apply -f ldapidp.yaml
 Note: For more information on configuring an OpenID provider, refer to https://docs.openshift.com/container-platform/4.8/authentication/identity_providers/configuring-oidc-identity-provider.html."
     when:
         - cntr_os_000440
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000440
         - CAT2
@@ -2443,29 +1602,6 @@ Note: For more information on configuring an OpenID provider, refer to https://d
 
 - name: "MEDIUM | CNTR-OS-000490 | PATCH | OpenShift must terminate all network connections associated with a communications session at the end of the session, or as follows: for in-band management sessions (privileged sessions), the session must be terminated after 10 minutes of inactivity."
   block:
-  - name: "MEDIUM | CNTR-OS-000490 | PATCH | OpenShift must terminate all network connections associated with a communications session at the end of the session, or as follows: for in-band management sessions (privileged sessions), the session must be terminated after 10 minutes of inactivity. | Check"
-    debug:
-        msg: "On each administrators terminal, verify the OC client version includes the required idle timeout by executing the following.
-
-oc version
-
-If the client version < "4.8.36", this is a finding.
-
-Determine if the session token inactivity timeout is set on the oauthclients by executing the following.
-
-oc get oauthclients -ojsonpath='{range .items[*]}{.metadata.name}{"\t"}{.accessTokenInactivityTimeoutSeconds}{"\n"}'
-
-The output will list each oauth client name followed by a number. The number represents the timeout in seconds. If no number is displayed, or the timeout value is >600, this is a finding."
-    when:
-        - cntr_os_000490
-    tags:
-        - CNTR-OS-000490
-        - CAT2
-        - CCI-001133
-        - SRG-APP-000190-CTR-000500
-        - SV-257544r921575_rule
-        - V-257544
-
   - name: "MEDIUM | CNTR-OS-000490 | PATCH | OpenShift must terminate all network connections associated with a communications session at the end of the session, or as follows: for in-band management sessions (privileged sessions), the session must be terminated after 10 minutes of inactivity. | Fix"
     debug:
         msg: "Download the latest version of the OC client, and remove/replace any older versions.
@@ -2477,6 +1613,7 @@ oc patch oauthclient/<CLIENT_NAME> --type=merge -p '{"accessTokenInactivityTimeo
 where CLIENT_NAME is the name of the oauthclient identified in the check."
     when:
         - cntr_os_000490
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000490
         - CAT2
@@ -2487,40 +1624,6 @@ where CLIENT_NAME is the name of the oauthclient identified in the check."
 
 - name: "MEDIUM | CNTR-OS-000500 | PATCH | OpenShift must separate user functionality (including user interface services) from information system management functionality."
   block:
-  - name: "MEDIUM | CNTR-OS-000500 | PATCH | OpenShift must separate user functionality (including user interface services) from information system management functionality. | Check"
-    debug:
-        msg: "Verify that root and core are the only user accounts on the nodes by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; cat /etc/passwd' 2>/dev/null; done
-
-The output will look similar to:
-
-<node_name> root:x:0:0:root:/root:/bin/bash
-core:x:1000:1000:CoreOS Admin:/var/home/core:/bin/bash
-containers:x:993:995:User for housing the sub ID range for containers:/var/home/containers:/sbin/nologin
-
-If there are any user accounts in addition to root, containers, and core, this is a finding.
-
-Verify the root and core users are set to disable password logon by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "^root" -e "^core" /etc/shadow' 2>/dev/null; done
-
-The output will look similar to:
-<node_name>
-root:*:18367:0:99999:7:::
-core:*:18939:0:99999:7:::
-
-If the password entry has anything other than '*', this is a finding."
-    when:
-        - cntr_os_000500
-    tags:
-        - CNTR-OS-000500
-        - CAT2
-        - CCI-001082
-        - SRG-APP-000211-CTR-000530
-        - SV-257545r921578_rule
-        - V-257545
-
   - name: "MEDIUM | CNTR-OS-000500 | PATCH | OpenShift must separate user functionality (including user interface services) from information system management functionality. | Fix"
     debug:
         msg: "Disable and remove passwords from root and core accounts by executing the following:
@@ -2532,6 +1635,7 @@ Remove any additional user accounts from the nodes by executing the following:
 oc debug node/<node> -- chroot /host /bin/bash -c 'userdel <user>'"
     when:
         - cntr_os_000500
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000500
         - CAT2
@@ -2542,23 +1646,6 @@ oc debug node/<node> -- chroot /host /bin/bash -c 'userdel <user>'"
 
 - name: "MEDIUM | CNTR-OS-000540 | PATCH | OpenShift runtime must isolate security functions from nonsecurity functions."
   block:
-  - name: "MEDIUM | CNTR-OS-000540 | PATCH | OpenShift runtime must isolate security functions from nonsecurity functions. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) verifies correct operation of all security functions by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; getenforce' 2>/dev/null; done
-
-If "SELinux" is not active and not in "Enforcing" mode, this is a finding."
-    when:
-        - cntr_os_000540
-    tags:
-        - CNTR-OS-000540
-        - CAT2
-        - CCI-001084
-        - SRG-APP-000233-CTR-000585
-        - SV-257547r921584_rule
-        - V-257547
-
   - name: "MEDIUM | CNTR-OS-000540 | PATCH | OpenShift runtime must isolate security functions from nonsecurity functions. | Fix"
     debug:
         msg: "Apply the machine config by executing the following:
@@ -2580,6 +1667,7 @@ spec:
 done"
     when:
         - cntr_os_000540
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000540
         - CAT2
@@ -2590,23 +1678,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000560 | PATCH | OpenShift must prevent unauthorized and unintended information transfer via shared system resources and enable page poisoning."
   block:
-  - name: "MEDIUM | CNTR-OS-000560 | PATCH | OpenShift must prevent unauthorized and unintended information transfer via shared system resources and enable page poisoning. | Check"
-    debug:
-        msg: "Check the current CoreOS boot loader configuration has page poisoning enabled by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME ";  grep page_poison /boot/loader/entries/*.conf|| echo "not found"' 2>/dev/null; done
-
-If "page_poison" is not set to "1" or returns "not found", this is a finding."
-    when:
-        - cntr_os_000560
-    tags:
-        - CNTR-OS-000560
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257548r921587_rule
-        - V-257548
-
   - name: "MEDIUM | CNTR-OS-000560 | PATCH | OpenShift must prevent unauthorized and unintended information transfer via shared system resources and enable page poisoning. | Fix"
     debug:
         msg: "Apply the machine config to enable page poisoning by executing the following:
@@ -2628,6 +1699,7 @@ spec:
 done"
     when:
         - cntr_os_000560
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000560
         - CAT2
@@ -2638,23 +1710,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000570 | PATCH | OpenShift must disable virtual syscalls."
   block:
-  - name: "MEDIUM | CNTR-OS-000570 | PATCH | OpenShift must disable virtual syscalls. | Check"
-    debug:
-        msg: "Check the current CoreOS boot loader configuration has virtual syscalls disabled by executing the following:
-
- for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME ";  grep vsyscall=none boot/loader/entries/*.conf || echo "not found"' 2>/dev/null; done
-
-If "vsyscall" is not set to "none" or returns "not found", this is a finding."
-    when:
-        - cntr_os_000570
-    tags:
-        - CNTR-OS-000570
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257549r921590_rule
-        - V-257549
-
   - name: "MEDIUM | CNTR-OS-000570 | PATCH | OpenShift must disable virtual syscalls. | Fix"
     debug:
         msg: "Apply the machine config to disable virtual syscalls by executing the following:
@@ -2676,6 +1731,7 @@ spec:
 done"
     when:
         - cntr_os_000570
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000570
         - CAT2
@@ -2686,23 +1742,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000580 | PATCH | OpenShift must enable poisoning of SLUB/SLAB objects."
   block:
-  - name: "MEDIUM | CNTR-OS-000580 | PATCH | OpenShift must enable poisoning of SLUB/SLAB objects. | Check"
-    debug:
-        msg: "Verify that Red Hat Enterprise Linux CoreOS (RHCOS) is configured to enable poisoning of SLUB/SLAB objects to mitigate use-after-free vulnerabilities by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME ";  grep slub_debug /boot/loader/entries/*.conf ' 2>/dev/null; done
-
-If "slub_debug" is not set to "P" or is missing, this is a finding."
-    when:
-        - cntr_os_000580
-    tags:
-        - CNTR-OS-000580
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257550r921593_rule
-        - V-257550
-
   - name: "MEDIUM | CNTR-OS-000580 | PATCH | OpenShift must enable poisoning of SLUB/SLAB objects. | Fix"
     debug:
         msg: "Apply the machine config to enable poisoning of SLUB/SLAB objects by executing the following:
@@ -2724,6 +1763,7 @@ spec:
 done"
     when:
         - cntr_os_000580
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000580
         - CAT2
@@ -2734,23 +1774,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000590 | PATCH | OpenShift must set the sticky bit for world-writable directories."
   block:
-  - name: "MEDIUM | CNTR-OS-000590 | PATCH | OpenShift must set the sticky bit for world-writable directories. | Check"
-    debug:
-        msg: "Verify that all world-writable directories have the sticky bit set. List any world-writeable directories that do not have the sticky bit set by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; find / -type d \( -perm -0002 -a ! -perm -1000 ! -path "/var/lib/containers/*" ! -path "/var/lib/kubelet/pods/*" ! -path "/sysroot/ostree/deploy/*" \) -print 2>/dev/null' 2>/dev/null; done
-
-If there are any directories listed in the results, this is a finding."
-    when:
-        - cntr_os_000590
-    tags:
-        - CNTR-OS-000590
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257551r921596_rule
-        - V-257551
-
   - name: "MEDIUM | CNTR-OS-000590 | PATCH | OpenShift must set the sticky bit for world-writable directories. | Fix"
     debug:
         msg: "Fix the directory permissions, by either removing world-writeable permission, or setting the sticky bit by executing the following:
@@ -2763,6 +1786,7 @@ where
   <directory>: The directory on which to correct the permissions"
     when:
         - cntr_os_000590
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000590
         - CAT2
@@ -2773,25 +1797,6 @@ where
 
 - name: "MEDIUM | CNTR-OS-000600 | PATCH | OpenShift must restrict access to the kernel buffer."
   block:
-  - name: "MEDIUM | CNTR-OS-000600 | PATCH | OpenShift must restrict access to the kernel buffer. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) is configured to restrict access to the kernel message buffer.
-
-Check the status of the kernel.dmesg_restrict kernel parameter by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; sysctl kernel.dmesg_restrict' 2>/dev/null; done
-
-If "kernel.dmesg_restrict" is not set to "1" or is missing, this is a finding."
-    when:
-        - cntr_os_000600
-    tags:
-        - CNTR-OS-000600
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257552r921599_rule
-        - V-257552
-
   - name: "MEDIUM | CNTR-OS-000600 | PATCH | OpenShift must restrict access to the kernel buffer. | Fix"
     debug:
         msg: "Apply the machine config to restrict access to the kernel message buffer by executing the following:
@@ -2818,6 +1823,7 @@ spec:
 done"
     when:
         - cntr_os_000600
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000600
         - CAT2
@@ -2828,26 +1834,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000610 | PATCH | OpenShift must prevent kernel profiling."
   block:
-  - name: "MEDIUM | CNTR-OS-000610 | PATCH | OpenShift must prevent kernel profiling. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) is configured to prevent kernel profiling by unprivileged users.
-
-Check the status of the kernel.perf_event_paranoid kernel parameter by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; sysctl kernel.perf_event_paranoid
-' 2>/dev/null; done
-
-If "kernel.perf_event_paranoid" is not set to "2" or is missing, this is a finding."
-    when:
-        - cntr_os_000610
-    tags:
-        - CNTR-OS-000610
-        - CAT2
-        - CCI-001090
-        - SRG-APP-000243-CTR-000600
-        - SV-257553r921602_rule
-        - V-257553
-
   - name: "MEDIUM | CNTR-OS-000610 | PATCH | OpenShift must prevent kernel profiling. | Fix"
     debug:
         msg: "Apply the machine config to prevent kernel profiling by executing the following:
@@ -2874,6 +1860,7 @@ spec:
 done"
     when:
         - cntr_os_000610
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000610
         - CAT2
@@ -2884,31 +1871,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000620 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by setting a default Resource Quota."
   block:
-  - name: "MEDIUM | CNTR-OS-000620 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by setting a default Resource Quota. | Check"
-    debug:
-        msg: "Check for Resource Quota. Verify a default project template is defined by executing the following:
-
-oc get project.config.openshift.io/cluster -o jsonpath="{.spec.projectRequestTemplate.name}"
-
-If no project request template is in use by the project config, this is a finding.
-
-Verify the project template includes a default resource quota.
-
-oc get templates/<PROJECT-REQUEST-TEMPLATE> -n openshift-config -o jsonpath="{.objects[?(.kind=='ResourceQuota')]}{'\n'}"
-
-Replace <PROJECT-REQUEST-TEMPLATE> with the name of the project request template returned from the earlier query.
-
-If the project template is not defined, or there are no ResourceQuota definitions in it, this is a finding."
-    when:
-        - cntr_os_000620
-    tags:
-        - CNTR-OS-000620
-        - CAT2
-        - CCI-001094
-        - SRG-APP-000246-CTR-000605
-        - SV-257554r921605_rule
-        - V-257554
-
   - name: "MEDIUM | CNTR-OS-000620 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by setting a default Resource Quota. | Fix"
     debug:
         msg: "Configure a default resource quota to protect resource over utilization by performing the following steps:
@@ -2941,6 +1903,7 @@ oc patch project.config.openshift.io/cluster --type=merge -p '{"spec":{"projectR
 Details regarding the configuration of resource quotas can be reviewed at https://docs.openshift.com/container-platform/4.8/applications/quotas/quotas-setting-per-project.html."
     when:
         - cntr_os_000620
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000620
         - CAT2
@@ -2951,23 +1914,6 @@ Details regarding the configuration of resource quotas can be reviewed at https:
 
 - name: "MEDIUM | CNTR-OS-000630 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by rate-limiting."
   block:
-  - name: "MEDIUM | CNTR-OS-000630 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by rate-limiting. | Check"
-    debug:
-        msg: "Verify that all namespaces except those that start with kube-* or openshift-* use the rate-limiting annotation by executing the following:
-
-oc get routes --all-namespaces -o json | jq '[.items[] | select(.metadata.namespace | startswith("kube-") or startswith("openshift-") | not) | select(.metadata.annotations["haproxy.router.openshift.io/rate-limit-connections"] == "true" | not) | .metadata.name]'
-
-If the above command returns any namespaces, this is a finding."
-    when:
-        - cntr_os_000630
-    tags:
-        - CNTR-OS-000630
-        - CAT2
-        - CCI-001094
-        - SRG-APP-000246-CTR-000605
-        - SV-257555r921608_rule
-        - V-257555
-
   - name: "MEDIUM | CNTR-OS-000630 | PATCH | OpenShift must restrict individuals the ability to launch organizational-defined Denial-of-Service (DOS) attacks against other information systems by rate-limiting. | Fix"
     debug:
         msg: "Add the haproxy.router.openshift.io/rate-limit-connections annotation to any routes outside the kube-* or openshift-* namespaces 
@@ -2977,6 +1923,7 @@ oc annotate route <route_name> -n <namespace> --overwrite=true "haproxy.router.o
 https://docs.openshift.com/container-platform/4.9/networking/routes/route-configuration.html"
     when:
         - cntr_os_000630
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000630
         - CAT2
@@ -2987,27 +1934,6 @@ https://docs.openshift.com/container-platform/4.9/networking/routes/route-config
 
 - name: "MEDIUM | CNTR-OS-000690 | PATCH | OpenShift must configure Alert Manger Receivers to notify SA and ISSO of all audit failure events requiring real-time alerts."
   block:
-  - name: "MEDIUM | CNTR-OS-000690 | PATCH | OpenShift must configure Alert Manger Receivers to notify SA and ISSO of all audit failure events requiring real-time alerts. | Check"
-    debug:
-        msg: "Verify the AlertManager config includes a configured receiver.
-
-1. From the Administrator perspective on the OpenShift web console, navigate to Administration >> Cluster Settings >> Configuration >> Alertmanager.
-
-2. View the list of receivers and inspect the configuration.
-
-3. Verify that at least one receiver is configured as either PagerDuty, Webhook, Email, or Slack according to the organizations policy.
-
-If an alert receiver is not configured according to the organizational policy, this is a finding."
-    when:
-        - cntr_os_000690
-    tags:
-        - CNTR-OS-000690
-        - CAT2
-        - CCI-001858
-        - SRG-APP-000360-CTR-000815
-        - SV-257559r921620_rule
-        - V-257559
-
   - name: "MEDIUM | CNTR-OS-000690 | PATCH | OpenShift must configure Alert Manger Receivers to notify SA and ISSO of all audit failure events requiring real-time alerts. | Fix"
     debug:
         msg: "Create an alert notification receiver.
@@ -3026,6 +1952,7 @@ Refer to the following documentation for more information:
 https://docs.openshift.com/container-platform/4.8/monitoring/managing-alerts.html#sending-notifications-to-external-systems_managing-alerts"
     when:
         - cntr_os_000690
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000690
         - CAT2
@@ -3036,30 +1963,6 @@ https://docs.openshift.com/container-platform/4.8/monitoring/managing-alerts.htm
 
 - name: "MEDIUM | CNTR-OS-000720 | PATCH | OpenShift must enforce access restrictions and support auditing of the enforcement actions."
   block:
-  - name: "MEDIUM | CNTR-OS-000720 | PATCH | OpenShift must enforce access restrictions and support auditing of the enforcement actions. | Check"
-    debug:
-        msg: "Verify OpenShift is configured to audit the execution of the "execve" system call by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "execpriv" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--a always,exit -F arch=b32 -S execve -C uid!=euid -F euid=0 -k execpriv
--a always,exit -F arch=b64 -S execve -C uid!=euid -F euid=0 -k execpriv
--a always,exit -F arch=b32 -S execve -C gid!=egid -F egid=0 -k execpriv
--a always,exit -F arch=b64 -S execve -C gid!=egid -F egid=0 -k execpriv
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000720
-    tags:
-        - CNTR-OS-000720
-        - CAT2
-        - CCI-001814
-        - SRG-APP-000381-CTR-000905
-        - SV-257560r921623_rule
-        - V-257560
-
   - name: "MEDIUM | CNTR-OS-000720 | PATCH | OpenShift must enforce access restrictions and support auditing of the enforcement actions. | Fix"
     debug:
         msg: "Apply the machine config to audit the execution of "execve" by executing the following:
@@ -3086,6 +1989,7 @@ spec:
 done"
     when:
         - cntr_os_000720
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000720
         - CAT2
@@ -3096,29 +2000,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000740 | PATCH | OpenShift must prevent the installation of patches, service packs, device drivers, or operating system components without verification they have been digitally signed using a certificate that is recognized and approved by the organization."
   block:
-  - name: "MEDIUM | CNTR-OS-000740 | PATCH | OpenShift must prevent the installation of patches, service packs, device drivers, or operating system components without verification they have been digitally signed using a certificate that is recognized and approved by the organization. | Check"
-    debug:
-        msg: "To verify integrity of the cluster version, execute the following:
-
-oc get clusterversion version 
-
-If the Cluster Version Operator is not installed or the AVAILABLE is not set to True, this is a finding. 
-
-Run the following command to retrieve the Cluster Version objects in the system: 
-
-oc get clusterversion version -o yaml
-
-If "verified: true", under status history for each item is not present, this is a finding."
-    when:
-        - cntr_os_000740
-    tags:
-        - CNTR-OS-000740
-        - CAT2
-        - CCI-001764
-        - SRG-APP-000384-CTR-000915
-        - SV-257561r921626_rule
-        - V-257561
-
   - name: "MEDIUM | CNTR-OS-000740 | PATCH | OpenShift must prevent the installation of patches, service packs, device drivers, or operating system components without verification they have been digitally signed using a certificate that is recognized and approved by the organization. | Fix"
     debug:
         msg: "By default, the integrity of RH CoreOS is checked by cluster version operator on OpenShift platform. If the integrity is not verified, reinstall of the cluster is necessary.
@@ -3127,6 +2008,7 @@ Refer to instructions:
 https://docs.openshift.com/container-platform/4.10/installing/index.html"
     when:
         - cntr_os_000740
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000740
         - CAT2
@@ -3137,31 +2019,6 @@ https://docs.openshift.com/container-platform/4.10/installing/index.html"
 
 - name: "MEDIUM | CNTR-OS-000760 | PATCH | OpenShift must set server token max age no greater than eight hours."
   block:
-  - name: "MEDIUM | CNTR-OS-000760 | PATCH | OpenShift must set server token max age no greater than eight hours. | Check"
-    debug:
-        msg: "To check if the OAuth server token max age is configured, execute the following:
-
-oc get oauth cluster -ojsonpath='{.spec.tokenConfig.accessTokenMaxAgeSeconds}'
-
-If the output timeout value on the OAuth server is >"28800" or missing, this is a finding.
-
-Check the OAuth client token value (this can be set on each client also).
-
-Check all clients OAuth client token max age configuration by execute the following:
-
-oc get oauthclients -ojson | jq -r '.items[] | { accessTokenMaxAgeSeconds: .accessTokenMaxAgeSeconds}'
-
-If the output returns a timeout value of >"28800" for any client, this is a finding."
-    when:
-        - cntr_os_000760
-    tags:
-        - CNTR-OS-000760
-        - CAT2
-        - CCI-002007
-        - SRG-APP-000400-CTR-000960
-        - SV-257562r921629_rule
-        - V-257562
-
   - name: "MEDIUM | CNTR-OS-000760 | PATCH | OpenShift must set server token max age no greater than eight hours. | Fix"
     debug:
         msg: "To set the OAuth server token max age, edit the OAuth server object by executing the following:
@@ -3173,6 +2030,7 @@ To set the OAuth client token max age, edit the OAuth client object by executing
 cli in $(oc get oauthclient -oname); do oc patch oauthclient $cli --type=merge -p '{"accessTokenMaxAgeSeconds": 28800}'; done"
     when:
         - cntr_os_000760
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000760
         - CAT2
@@ -3183,32 +2041,6 @@ cli in $(oc get oauthclient -oname); do oc patch oauthclient $cli --type=merge -
 
 - name: "MEDIUM | CNTR-OS-000770 | PATCH | Vulnerability scanning applications must implement privileged access authorization to all OpenShift components, containers, and container images for selected organization-defined vulnerability scanning activities."
   block:
-  - name: "MEDIUM | CNTR-OS-000770 | PATCH | Vulnerability scanning applications must implement privileged access authorization to all OpenShift components, containers, and container images for selected organization-defined vulnerability scanning activities. | Check"
-    debug:
-        msg: "If no vulnerability scanning tool is used, this requirement is Not Applicable.
-
-Identify the service accounts used by the vulnerability scanning tools. If the tool runs as a container on the platform, then service account information can be found in the pod details by executing the following:
-
-(oc get pods to list pods)
-oc get pod <POD_ID> -o jsonpath='{.spec.serviceAccount}{"\n"}'
-
-If no service account exists for the vulnerability scanning tool, this is a finding.
-
-View cluster role bindings to determine which role the service account is bound to by executing the following:
-
-oc get clusterrolebinding -ojson | jq '.items[]|select(.subjects[]?|select(.kind == "ServiceAccount" and .name == "ingress-to-route-controller"))|{ "crb": .metadata.name, "roleRef": .roleRef, "subjects": .subjects}'
-
-Find the role to which the service account is bound, if the service account is not bound to a cluster role, or the role does not provide sufficient access, this is a finding."
-    when:
-        - cntr_os_000770
-    tags:
-        - CNTR-OS-000770
-        - CAT2
-        - CCI-001067
-        - SRG-APP-000414-CTR-001010
-        - SV-257563r921632_rule
-        - V-257563
-
   - name: "MEDIUM | CNTR-OS-000770 | PATCH | Vulnerability scanning applications must implement privileged access authorization to all OpenShift components, containers, and container images for selected organization-defined vulnerability scanning activities. | Fix"
     debug:
         msg: "If no vulnerability scanning tool is used, this requirement is Not Applicable.
@@ -3239,6 +2071,7 @@ https://docs.openshift.com/container-platform/4.8/authentication/understanding-a
 https://docs.openshift.com/container-platform/4.8/authentication/using-service-accounts-in-applications.html"
     when:
         - cntr_os_000770
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000770
         - CAT2
@@ -3249,28 +2082,6 @@ https://docs.openshift.com/container-platform/4.8/authentication/using-service-a
 
 - name: "MEDIUM | CNTR-OS-000780 | PATCH | OpenShift keystore must implement encryption to prevent unauthorized disclosure of information at rest within the container platform."
   block:
-  - name: "MEDIUM | CNTR-OS-000780 | PATCH | OpenShift keystore must implement encryption to prevent unauthorized disclosure of information at rest within the container platform. | Check"
-    debug:
-        msg: "Review the API server encryption by running by executing the following:
-
-oc edit apiserver
-
-EXAMPLE OUTPUT
-spec:
-  encryption:
-    type: aescbc 
-
-If the encryption type is not "aescbc", this is a finding."
-    when:
-        - cntr_os_000780
-    tags:
-        - CNTR-OS-000780
-        - CAT2
-        - CCI-002476
-        - SRG-APP-000429-CTR-001060
-        - SV-257564r921635_rule
-        - V-257564
-
   - name: "MEDIUM | CNTR-OS-000780 | PATCH | OpenShift keystore must implement encryption to prevent unauthorized disclosure of information at rest within the container platform. | Fix"
     debug:
         msg: "Set API encryption type by executing the following:
@@ -3286,6 +2097,7 @@ Additional details about the configuration can be found in the documentation:
 https://docs.openshift.com/container-platform/4.8/security/encrypting-etcd.html"
     when:
         - cntr_os_000780
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000780
         - CAT2
@@ -3296,23 +2108,6 @@ https://docs.openshift.com/container-platform/4.8/security/encrypting-etcd.html"
 
 - name: "MEDIUM | CNTR-OS-000800 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by employing organization-defined security safeguards by including a default resource quota."
   block:
-  - name: "MEDIUM | CNTR-OS-000800 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by employing organization-defined security safeguards by including a default resource quota. | Check"
-    debug:
-        msg: "Verify the new project template includes a default resource quota by executing the following:
-
-oc get templates/project-request -n openshift-config -o jsonpath="{.objects[?(.kind=='ResourceQuota')]}{'\n'}"
-
-Review the ResourceQuota definition. If nothing is return, this is a finding."
-    when:
-        - cntr_os_000800
-    tags:
-        - CNTR-OS-000800
-        - CAT2
-        - CCI-002385
-        - SRG-APP-000435-CTR-001070
-        - SV-257565r921638_rule
-        - V-257565
-
   - name: "MEDIUM | CNTR-OS-000800 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by employing organization-defined security safeguards by including a default resource quota. | Fix"
     debug:
         msg: "Configure a default resource quota as necessary to protect resource over utilization.
@@ -3341,6 +2136,7 @@ oc create -f template.yaml -n openshift-config
 Details regarding the configuration of resource quotas can be reviewed at https://docs.openshift.com/container-platform/4.8/applications/quotas/quotas-setting-per-project.html."
     when:
         - cntr_os_000800
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000800
         - CAT2
@@ -3351,25 +2147,6 @@ Details regarding the configuration of resource quotas can be reviewed at https:
 
 - name: "MEDIUM | CNTR-OS-000810 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by defining resource quotas on a namespace."
   block:
-  - name: "MEDIUM | CNTR-OS-000810 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by defining resource quotas on a namespace. | Check"
-    debug:
-        msg: "Note: CNTR-OS-000140 is a prerequisite to this control. A Network Policy must exist to run this check.
-
-Verify that each user namespace has a ResourceQuota defined by executing the following:
-
-for ns in $(oc get namespaces -ojson | jq -r '.items[] | select((.metadata.name | startswith("openshift") | not) and (.metadata.name | startswith("kube-") | not) and .metadata.name != "default") | .metadata.name '); do oc get resourcequota -n$ns; done
-
-If the above returns any lines saying "No resources found in <PROJECT> namespace.", this is a finding. Empty output is not a finding."
-    when:
-        - cntr_os_000810
-    tags:
-        - CNTR-OS-000810
-        - CAT2
-        - CCI-001094
-        - SRG-APP-000435-CTR-001070
-        - SV-257566r921641_rule
-        - V-257566
-
   - name: "MEDIUM | CNTR-OS-000810 | PATCH | OpenShift must protect against or limit the effects of all types of Denial-of-Service (DoS) attacks by defining resource quotas on a namespace. | Fix"
     debug:
         msg: "Add a resource quota to an existing project namespace by performing the following steps:
@@ -3398,6 +2175,7 @@ oc apply -f <YOURFILE>.yaml -n <NAMESPACE>
 Details regarding the configuration of resource quotas can be reviewed at https://docs.openshift.com/container-platform/4.8/applications/quotas/quotas-setting-per-project.html."
     when:
         - cntr_os_000810
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000810
         - CAT2
@@ -3408,23 +2186,6 @@ Details regarding the configuration of resource quotas can be reviewed at https:
 
 - name: "MEDIUM | CNTR-OS-000820 | PATCH | OpenShift must protect the confidentiality and integrity of transmitted information."
   block:
-  - name: "MEDIUM | CNTR-OS-000820 | PATCH | OpenShift must protect the confidentiality and integrity of transmitted information. | Check"
-    debug:
-        msg: "Verify that routes and ingress are using secured transmission ports and protocols by executing the following:
-
-oc get routes --all-namespaces
-
-Review the ingress ports, if the Ingress is not using a secure TLS transport, this is a finding."
-    when:
-        - cntr_os_000820
-    tags:
-        - CNTR-OS-000820
-        - CAT2
-        - CCI-002418
-        - SRG-APP-000439-CTR-001080
-        - SV-257567r921644_rule
-        - V-257567
-
   - name: "MEDIUM | CNTR-OS-000820 | PATCH | OpenShift must protect the confidentiality and integrity of transmitted information. | Fix"
     debug:
         msg: "Delete any Route or Ingress that does not use a secure transport.
@@ -3436,6 +2197,7 @@ or
 oc delete ingress <NAME> -n <NAMESPACE>"
     when:
         - cntr_os_000820
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000820
         - CAT2
@@ -3446,37 +2208,13 @@ oc delete ingress <NAME> -n <NAMESPACE>"
 
 - name: "MEDIUM | CNTR-OS-000860 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement nonexecutable data to protect its memory from unauthorized code execution."
   block:
-  - name: "MEDIUM | CNTR-OS-000860 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement nonexecutable data to protect its memory from unauthorized code execution. | Check"
-    debug:
-        msg: "Verify the NX (no-execution) bit flag is set on the system by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; dmesg | grep Execute ' 2>/dev/null; done
-
-Example Output:([ 0.000000] NX (Execute Disable) protection: active)
-
-If "dmesg" does not show "NX (Execute Disable) protection active", check the cpuinfo settings by executing the following command: 
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; less /proc/cpuinfo | grep 'nx' /proc/cpuinfo | uniq' 2>/dev/null; done
-
-(Example Output: flags : fpu vme de pse tsc ms nx rdtscp lm constant_tsc...)
-
-If "flags" does not contain the "nx" flag, this is a finding."
-    when:
-        - cntr_os_000860
-    tags:
-        - CNTR-OS-000860
-        - CAT2
-        - CCI-002824
-        - SRG-APP-000450-CTR-001105
-        - SV-257568r921647_rule
-        - V-257568
-
   - name: "MEDIUM | CNTR-OS-000860 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement nonexecutable data to protect its memory from unauthorized code execution. | Fix"
     debug:
         msg: "The NX bit execute protection must be enabled in the system BIOS. The nodes must be reinstalled. Follow the steps found here for more information:
 https://access.redhat.com/solutions/2936741"
     when:
         - cntr_os_000860
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000860
         - CAT2
@@ -3487,24 +2225,6 @@ https://access.redhat.com/solutions/2936741"
 
 - name: "MEDIUM | CNTR-OS-000870 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement ASLR (Address Space Layout Randomization) from unauthorized code execution."
   block:
-  - name: "MEDIUM | CNTR-OS-000870 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement ASLR (Address Space Layout Randomization) from unauthorized code execution. | Check"
-    debug:
-        msg: "Verify Red Hat Enterprise Linux CoreOS (RHCOS) implements ASLR by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; sysctl kernel.randomize_va_space
-' 2>/dev/null; done
-
-If "kernel.randomize_va_space" is not set to "2", this is a finding."
-    when:
-        - cntr_os_000870
-    tags:
-        - CNTR-OS-000870
-        - CAT2
-        - CCI-002824
-        - SRG-APP-000450-CTR-001105
-        - SV-257569r921650_rule
-        - V-257569
-
   - name: "MEDIUM | CNTR-OS-000870 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must implement ASLR (Address Space Layout Randomization) from unauthorized code execution. | Fix"
     debug:
         msg: "Apply the machine config to implement ASLR by executing the following:
@@ -3531,6 +2251,7 @@ spec:
 done"
     when:
         - cntr_os_000870
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000870
         - CAT2
@@ -3541,23 +2262,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000880 | PATCH | OpenShift must remove old components after updated versions have been installed."
   block:
-  - name: "MEDIUM | CNTR-OS-000880 | PATCH | OpenShift must remove old components after updated versions have been installed. | Check"
-    debug:
-        msg: "Ensure the imagepruner is configured and is not in a suspended state by executing the following:
-
-oc get imagepruners.imageregistry.operator.openshift.io/cluster -o jsonpath='{.spec}{"\n"}'
-
-Review the settings. If "suspend" is set to "true", this is a finding."
-    when:
-        - cntr_os_000880
-    tags:
-        - CNTR-OS-000880
-        - CAT2
-        - CCI-002617
-        - SRG-APP-000454-CTR-001110
-        - SV-257570r921653_rule
-        - V-257570
-
   - name: "MEDIUM | CNTR-OS-000880 | PATCH | OpenShift must remove old components after updated versions have been installed. | Fix"
     debug:
         msg: "Enable the image pruner to automate the pruning of images from the cluster by executing the following:
@@ -3568,6 +2272,7 @@ For additional details on configuring the image pruner operator, refer to the fo
 https://docs.openshift.com/container-platform/4.8/applications/pruning-objects.html#pruning-images_pruning-objects"
     when:
         - cntr_os_000880
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000880
         - CAT2
@@ -3578,25 +2283,6 @@ https://docs.openshift.com/container-platform/4.8/applications/pruning-objects.h
 
 - name: "MEDIUM | CNTR-OS-000890 | PATCH | OpenShift must contain the latest images with most recent updates and execute within the container platform runtime as authorized by IAVM, CTOs, DTMs, and STIGs."
   block:
-  - name: "MEDIUM | CNTR-OS-000890 | PATCH | OpenShift must contain the latest images with most recent updates and execute within the container platform runtime as authorized by IAVM, CTOs, DTMs, and STIGs. | Check"
-    debug:
-        msg: "Verify the image source policy is configured by executing the following:
-
- oc get image.config.openshift.io/cluster -o jsonpath='{.spec.registrySources}{"\nAllowedRegistriesForImport: "}{.spec.allowedRegistriesForImport}{"\n"}'
-
-If nothing is returned, this is a finding. 
-
-If the registries listed under allowedRegistries, insecureRegistries, or AllowedRegistriesForImport are not from trusted sources as defined by the organization, this is a finding."
-    when:
-        - cntr_os_000890
-    tags:
-        - CNTR-OS-000890
-        - CAT2
-        - CCI-002605
-        - SRG-APP-000456-CTR-001125
-        - SV-257571r921656_rule
-        - V-257571
-
   - name: "MEDIUM | CNTR-OS-000890 | PATCH | OpenShift must contain the latest images with most recent updates and execute within the container platform runtime as authorized by IAVM, CTOs, DTMs, and STIGs. | Fix"
     debug:
         msg: "Edit the cluster image config resource to define the allowed registries by executing the following:
@@ -3637,6 +2323,7 @@ status:
 ----------------------------------------------------------------------"
     when:
         - cntr_os_000890
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000890
         - CAT2
@@ -3647,38 +2334,6 @@ status:
 
 - name: "MEDIUM | CNTR-OS-000900 | PATCH | OpenShift runtime must have updates installed within the period directed by an authoritative source (e.g., IAVM, CTOs, DTMs, and STIGs)."
   block:
-  - name: "MEDIUM | CNTR-OS-000900 | PATCH | OpenShift runtime must have updates installed within the period directed by an authoritative source (e.g., IAVM, CTOs, DTMs, and STIGs). | Check"
-    debug:
-        msg: "To list all the imagestreams and identify which imagestream tags are configured to periodically check for updates (imagePolicy = { scheduled: true }), execute the following:
-
-oc get imagestream  --all-namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{range .spec.tags[*]}{"\t"}{.name}{": "}{.importPolicy}{"\n"}'
-
-The output will be similar to:
-
-httpd
-        2.4: {}
-        2.4-el7: {}
-        2.4-el8: {}
-        latest: {}
-        : 
-installer
-        latest: {"scheduled":true}
-        : 
-installer-artifacts
-        latest: {"scheduled":true}
-        : 
-
-Review the listing, and for each imagestream tag version that does not have the value '{"scheduled":true}' that should otherwise check for updates, this is a finding."
-    when:
-        - cntr_os_000900
-    tags:
-        - CNTR-OS-000900
-        - CAT2
-        - CCI-002605
-        - SRG-APP-000456-CTR-001130
-        - SV-257572r921659_rule
-        - V-257572
-
   - name: "MEDIUM | CNTR-OS-000900 | PATCH | OpenShift runtime must have updates installed within the period directed by an authoritative source (e.g., IAVM, CTOs, DTMs, and STIGs). | Fix"
     debug:
         msg: "For container images that are not scheduled to check for updates that otherwise should, update the imagestream to schedule updates for each tag by executing the following:
@@ -3691,6 +2346,7 @@ where,
   TAG_NAME: The imagestream tag to update"
     when:
         - cntr_os_000900
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000900
         - CAT2
@@ -3701,43 +2357,6 @@ where,
 
 - name: "MEDIUM | CNTR-OS-000910 | PATCH | The Compliance Operator must be configured."
   block:
-  - name: "MEDIUM | CNTR-OS-000910 | PATCH | The Compliance Operator must be configured. | Check"
-    debug:
-        msg: "If Red Hat OpenShift Compliance Operator is not used, this check is Not Applicable.
-Note: If Red Hat OpenShift Compliance Operator is not used, run the checks manually.
-
-Review the cluster configuration to validate that all required security functions are being validated with the Compliance Operator.
-
-To determine if any scans have been applied to the cluster and the status of the scans, execute the following:
-
-oc get compliancescan -n openshift-compliance
-
-Example output:
-NAME PHASE RESULT
-ocp4-cis DONE NON-COMPLIANT
-ocp4-cis-manual DONE NON-COMPLIANT
-ocp4-cis-node-master DONE NON-COMPLIANT
-ocp4-cis-node-master-manual DONE NON-COMPLIANT
-ocp4-cis-node-worker DONE NON-COMPLIANT
-ocp4-cis-node-worker-manual DONE NON-COMPLIANT
-ocp4-moderate DONE NON-COMPLIANT
-ocp4-moderate-manual DONE NON-COMPLIANT
-rhcos4-moderate-master DONE NON-COMPLIANT
-rhcos4-moderate-master-manual DONE NON-COMPLIANT
-rhcos4-moderate-worker DONE NON-COMPLIANT
-rhcos4-moderate-worker-manual DONE NON-COMPLIANT
-
-If no ComplianceScan names return, the scans do not align to the organizationally-defined appropriate security functions, the command returns with an error, or any of the results show "NON-COMPLIANT" as their result, then this is a finding."
-    when:
-        - cntr_os_000910
-    tags:
-        - CNTR-OS-000910
-        - CAT2
-        - CCI-002696
-        - SRG-APP-000472-CTR-001170
-        - SV-257573r921662_rule
-        - V-257573
-
   - name: "MEDIUM | CNTR-OS-000910 | PATCH | The Compliance Operator must be configured. | Fix"
     debug:
         msg: "If Red Hat OpenShift Compliance Operator is not used,, this check is Not Applicable.
@@ -3787,6 +2406,7 @@ oc apply -f my-scansettingbinding.yml -n openshift-compliance
 For more information about the compliance operator and its use, including the creation of TailoredProfiles and the ScanSettings available to meet specific security functions or organizational goals defined in the SSP, refer to https://docs.openshift.com/container-platform/4.8/security/compliance_operator/compliance-operator-understanding.html."
     when:
         - cntr_os_000910
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000910
         - CAT2
@@ -3797,40 +2417,6 @@ For more information about the compliance operator and its use, including the cr
 
 - name: "MEDIUM | CNTR-OS-000920 | PATCH | OpenShift must perform verification of the correct operation of security functions: upon startup and/or restart; upon command by a user with privileged access; and/or every 30 days."
   block:
-  - name: "MEDIUM | CNTR-OS-000920 | PATCH | OpenShift must perform verification of the correct operation of security functions: upon startup and/or restart; upon command by a user with privileged access; and/or every 30 days. | Check"
-    debug:
-        msg: "If Red Hat OpenShift Compliance Operator is not used, this check is Not Applicable.
-
-Review the cluster configuration to validate that all required security functions are being validated with the Compliance Operator.
-
-To map the schedule of every profile through its ScanSettingBinding and output the schedules on which each Profile or TailoredProfile is run, execute the following commands:
- 
-declare -A binding_profiles
- declare -A binding_schedule
- while read binding setting profiles; do binding_profiles[$binding]="$profiles"; binding_schedule[$binding]=$(oc get scansetting -n openshift-compliance $setting -ojsonpath='{.schedule}'); done < <(oc get scansettingbinding -n openshift-compliance -ojsonpath='{range .items[*]}{.metadata.name} {.settingsRef.name} {range .profiles[*]}{.name} {end}{"\n"}{end}')
- for binding in "${!binding_profiles[@]}"; do for profile in ${binding_profiles[$binding]}; do echo "$profile: ${binding_schedule[$binding]}"; done; done
-
-If any error is returned, this is a finding.
-
-If the schedules are not at least monthly or within the organizationally defined periodicity, this is a finding.
-
-Check the profiles that are bound to schedules by executing the following:
-
-To determine which rules are enforced by the profiles that are currently bound to the scheduled periodicities, execute the following commands:
-
-for binding in "${!binding_profiles[@]}"; do for profile in ${binding_profiles[$binding]}; do for rule in $(oc get profile.compliance $profile -n openshift-compliance -ojsonpath='{range .rules[*]}{$}{"\n"}{end}'); do echo "$rule: ${binding_schedule[$binding]}"; done; done; done | sort -u
-
-If the profiles that are bound to schedules do not cover the organization-designed security functions, this is a finding."
-    when:
-        - cntr_os_000920
-    tags:
-        - CNTR-OS-000920
-        - CAT2
-        - CCI-002699
-        - SRG-APP-000473-CTR-001175
-        - SV-257574r921665_rule
-        - V-257574
-
   - name: "MEDIUM | CNTR-OS-000920 | PATCH | OpenShift must perform verification of the correct operation of security functions: upon startup and/or restart; upon command by a user with privileged access; and/or every 30 days. | Fix"
     debug:
         msg: "If Red Hat OpenShift Compliance Operator is not used, this check is Not Applicable.
@@ -3880,6 +2466,7 @@ oc apply -f my-scansettingbinding.yml -n openshift-compliance
 For more information about the compliance operator and its use, including the configurability of scheduling of scan cadence in ScanSetting resources and the role-based access control requirements for manually triggered scans, refer to https://docs.openshift.com/container-platform/4.8/security/compliance_operator/compliance-operator-understanding.html."
     when:
         - cntr_os_000920
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000920
         - CAT2
@@ -3890,104 +2477,6 @@ For more information about the compliance operator and its use, including the co
 
 - name: "MEDIUM | CNTR-OS-000930 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify privileges occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000930 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify privileges occur. | Check"
-    debug:
-        msg: "Verify OpenShift is configured to generate audit records when successful/unsuccessful attempts to modify privileges occur by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "key=unsuccessful-create" -e "key=unsuccessful-modification"  -e "key=delete" -e "key=unsuccessful-access" -e "actions" -e "key=perm_mod" -e "audit_rules_usergroup_modification"  -e "module-change"  -e "logins" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--w /etc/group -p wa -k audit_rules_usergroup_modification
--w /etc/gshadow -p wa -k audit_rules_usergroup_modification
--w /etc/passwd -p wa -k audit_rules_usergroup_modification
--w /etc/security/opasswd -p wa -k audit_rules_usergroup_modification
--w /etc/shadow -p wa -k audit_rules_usergroup_modification
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S open -F a1&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S open -F a1&0x40 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S open -F a1&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S open -F a1&0x40 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S creat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S creat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S creat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b64 -S creat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-create
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S open -F a1&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S open -F a1&0x203 -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S openat,open_by_handle_at -F a2&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modmodule-changeification
--a always,exit -F arch=b32 -S open -F a1&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S open -F a1&0x203 -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b64 -S truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-modification
--a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat,open_by_handle_at -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat,open_by_handle_at -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b32 -S open,creat,truncate,ftruncate,openat,open_by_handle_at -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--a always,exit -F arch=b64 -S open,truncate,ftruncate,creat,openat,open_by_handle_at -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-access
--w /etc/sudoers.d -p wa -k actions
--w /etc/sudoers -p wa -k actions
--a always,exit -F arch=b32 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S delete_module -F key=module-change
--a always,exit -F arch=b64 -S delete_module -F key=module-change
--a always,exit -F arch=b32 -S finit_module -F key=module-change
--a always,exit -F arch=b64 -S finit_module -F key=module-change
--a always,exit -F arch=b32 -S init_module -F key=module-change
--a always,exit -F arch=b64 -S init_module -F key=module-change
--w /var/log/lastlog -p wa -k logins
--a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000930
-    tags:
-        - CNTR-OS-000930
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000495-CTR-001235
-        - SV-257575r921668_rule
-        - V-257575
-
   - name: "MEDIUM | CNTR-OS-000930 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify privileges occur. | Fix"
     debug:
         msg: "Apply the machine config to generate audit records when successful/unsuccessful attempts to modify privileges by executing the following:
@@ -4284,6 +2773,7 @@ spec:
 done"
     when:
         - cntr_os_000930
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000930
         - CAT2
@@ -4294,40 +2784,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000940 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify security objects occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000940 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify security objects occur. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) is configured to generate audit records when successful/unsuccessful attempts to modify security categories or objects occur by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "key=privileged" -e "key=perm_mod" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F path=/usr/bin/chcon -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/restorecon -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/semanage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setfiles -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setsebool -F auid>=1000 -F auid!=unset -F key=privileged
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000940
-    tags:
-        - CNTR-OS-000940
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000496-CTR-001240
-        - SV-257576r921671_rule
-        - V-257576
-
   - name: "MEDIUM | CNTR-OS-000940 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to modify security objects occur. | Fix"
     debug:
         msg: "Apply the machine config to configure modification audit records by executing the following:
@@ -4399,6 +2855,7 @@ spec:
 done"
     when:
         - cntr_os_000940
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000940
         - CAT2
@@ -4409,92 +2866,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000950 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete privileges occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000950 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete privileges occur. | Check"
-    debug:
-        msg: "Verify OpenShift is configured to generate audit records when successful/unsuccessful attempts to delete security privileges occur by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "key=delete" -e "key=perm_mod" -e "key=privileged" -e "audit_rules_usergroup_modification" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--w /etc/group -p wa -k audit_rules_usergroup_modification
--w /etc/gshadow -p wa -k audit_rules_usergroup_modification
--w /etc/passwd -p wa -k audit_rules_usergroup_modification
--w /etc/security/opasswd -p wa -k audit_rules_usergroup_modification
--w /etc/shadow -p wa -k audit_rules_usergroup_modification
--a always,exit -F arch=b32 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S unlinkat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlinkat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S unlink -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlink -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F path=/usr/bin/chage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/chcon -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/chsh -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/crontab -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/gpasswd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/newgrp -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/passwd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/sudoedit -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/sudo -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/su -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/umount -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/libexec/openssh/ssh-keysign -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/libexec/pt_chown -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/pam_timestamp_check -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/postdrop -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/postqueue -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/semanage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setfiles -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setsebool -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/unix_chkpwd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/userhelper -F auid>=1000 -F auid!=unset -F key=privileged
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000950
-    tags:
-        - CNTR-OS-000950
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000499-CTR-001255
-        - SV-257577r921674_rule
-        - V-257577
-
   - name: "MEDIUM | CNTR-OS-000950 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete privileges occur. | Fix"
     debug:
         msg: "Apply the machine config to generate audit records when successful/unsuccessful attempts to delete security privileges by executing the following:
@@ -4626,6 +2997,7 @@ spec:
 done"
     when:
         - cntr_os_000950
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000950
         - CAT2
@@ -4636,107 +3008,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000960 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete security objects occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000960 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete security objects occur. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) is configured to generate audit records when successful/unsuccessful attempts to delete security objects or categories of information occur by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep  -e "key=access" -e "key=delete" -e "key=unsuccessful-delete"  -e "key=privileged" -e "key=perm_mod" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
--a always,exit -F arch=b32 -S unlink,unlinkat,rename,renameat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-delete
--a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=unsuccessful-delete
--a always,exit -F arch=b32 -S unlink,unlinkat,rename,renameat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-delete
--a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=unsuccessful-delete
--a always,exit -F arch=b32 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S chown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchmod -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S fsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod                                                                                                                                                   
--a always,exit -F arch=b32 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lchown -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S lsetxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S removexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S renameat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S renameat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b64 -S renameat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S renameat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S renameat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rename -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rename -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b64 -S rename -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S rename -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S rename -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S rmdir -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b32 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S setxattr -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=unset -F key=perm_mod
--a always,exit -F arch=b32 -S unlinkat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlinkat -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlinkat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b64 -S unlinkat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S unlinkat -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S unlinkat -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S unlink -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlink -F auid>=1000 -F auid!=unset -F key=delete
--a always,exit -F arch=b64 -S unlink -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b64 -S unlink -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S unlink -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F arch=b32 -S unlink -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
--a always,exit -F path=/usr/bin/chage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/chcon -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/chsh -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/crontab -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/gpasswd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/newgrp -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/passwd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/sudoedit -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/sudo -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/su -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/bin/umount -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/libexec/openssh/ssh-keysign -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/libexec/pt_chown -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/pam_timestamp_check -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/postdrop -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/postqueue -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/semanage -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setfiles -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/setsebool -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/unix_chkpwd -F auid>=1000 -F auid!=unset -F key=privileged
--a always,exit -F path=/usr/sbin/userhelper -F auid>=1000 -F auid!=unset -F key=privileged
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000960
-    tags:
-        - CNTR-OS-000960
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000501-CTR-001265
-        - SV-257578r921677_rule
-        - V-257578
-
   - name: "MEDIUM | CNTR-OS-000960 | PATCH | OpenShift must generate audit records when successful/unsuccessful attempts to delete security objects occur. | Fix"
     debug:
         msg: "Apply the machine config to generate audit records when security objects or categories are deleted by executing the following:
@@ -4817,6 +3088,7 @@ spec:
 " ; done | oc apply -f -"
     when:
         - cntr_os_000960
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000960
         - CAT2
@@ -4827,28 +3099,6 @@ spec:
 
 - name: "MEDIUM | CNTR-OS-000970 | PATCH | OpenShift must generate audit records when successful/unsuccessful logon attempts occur."
   block:
-  - name: "MEDIUM | CNTR-OS-000970 | PATCH | OpenShift must generate audit records when successful/unsuccessful logon attempts occur. | Check"
-    debug:
-        msg: "Verify that logons are audited by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n ""$HOSTNAME ""; grep ""logins"" /etc/audit/audit.rules /etc/audit/rules.d/*' 2>/dev/null; done
-
-The output will look similar to:
-
-node-name /etc/audit/<file>:-w /var/run/faillock -p wa -k logins
-/etc/audit/<file>:-w /var/log/lastlog -p wa -k logins
-
-If the two rules above are not found on each node, this is a finding."
-    when:
-        - cntr_os_000970
-    tags:
-        - CNTR-OS-000970
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000503-CTR-001275
-        - SV-257579r921680_rule
-        - V-257579
-
   - name: "MEDIUM | CNTR-OS-000970 | PATCH | OpenShift must generate audit records when successful/unsuccessful logon attempts occur. | Fix"
     debug:
         msg: "Apply the machine config to audit logons by executing the following:
@@ -4910,6 +3160,7 @@ spec:
 done"
     when:
         - cntr_os_000970
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000970
         - CAT2
@@ -4920,36 +3171,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000980 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must be configured to audit the loading and unloading of dynamic kernel modules."
   block:
-  - name: "MEDIUM | CNTR-OS-000980 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must be configured to audit the loading and unloading of dynamic kernel modules. | Check"
-    debug:
-        msg: "Verify the audit rules capture loading and unloading of kernel modules by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e module-load -e module-unload -e module-change /etc/audit/rules.d/* /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node.
-
--a always,exit -F arch=b32 -S init_module,finit_module -F key=module-load
--a always,exit -F arch=b64 -S init_module,finit_module -F key=module-load
--a always,exit -F arch=b32 -S delete_module -F key=module-unload
--a always,exit -F arch=b64 -S delete_module -F key=module-unload
--a always,exit -F arch=b32 -S delete_module -k module-change
--a always,exit -F arch=b64 -S delete_module -k module-change
--a always,exit -F arch=b32 -S finit_module -k module-change
--a always,exit -F arch=b64 -S finit_module -k module-change
--a always,exit -F arch=b32 -S init_module -k module-change
--a always,exit -F arch=b64 -S init_module -k module-change
-
-If the above rules are not listed for each node, this is a finding."
-    when:
-        - cntr_os_000980
-    tags:
-        - CNTR-OS-000980
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000504-CTR-001280
-        - SV-257580r921683_rule
-        - V-257580
-
   - name: "MEDIUM | CNTR-OS-000980 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must be configured to audit the loading and unloading of dynamic kernel modules. | Fix"
     debug:
         msg: "Apply the machine config for audit rules capture by executing the following:
@@ -4991,6 +3212,7 @@ spec:
 done"
     when:
         - cntr_os_000980
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000980
         - CAT2
@@ -5001,28 +3223,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-000990 | PATCH | OpenShift audit records must record user access start and end times."
   block:
-  - name: "MEDIUM | CNTR-OS-000990 | PATCH | OpenShift audit records must record user access start and end times. | Check"
-    debug:
-        msg: "Verify the Red Hat Enterprise Linux CoreOS (RHCOS) is configured to generate audit records showing starting and ending times for user access by executing the following:
- 
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -e "-k session" /etc/audit/audit.rules' 2>/dev/null; done
-
-Confirm the following rules exist on each node:
-
- -w /var/log/btmp -p wa -k session
--w /var/log/utmp -p wa -k session
-
-If the above rules are not listed on each node, this is a finding."
-    when:
-        - cntr_os_000990
-    tags:
-        - CNTR-OS-000990
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000505-CTR-001285
-        - SV-257581r921686_rule
-        - V-257581
-
   - name: "MEDIUM | CNTR-OS-000990 | PATCH | OpenShift audit records must record user access start and end times. | Fix"
     debug:
         msg: "Apply the machine config for user access times by executing the following:
@@ -5054,6 +3254,7 @@ spec:
 done"
     when:
         - cntr_os_000990
+        - okd412stig_cat2
     tags:
         - CNTR-OS-000990
         - CAT2
@@ -5064,28 +3265,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-001000 | PATCH | OpenShift must generate audit records when concurrent logons from different workstations and systems occur."
   block:
-  - name: "MEDIUM | CNTR-OS-001000 | PATCH | OpenShift must generate audit records when concurrent logons from different workstations and systems occur. | Check"
-    debug:
-        msg: "Verify that concurrent logons are audited by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep "logins" /etc/audit/audit.rules /etc/audit/rules.d/*' 2>/dev/null; done
-
-The output will look similar to:
-
-node-name /etc/audit/<file>:-w /var/run/faillock -p wa -k logins
-/etc/audit/<file>:-w /var/log/lastlog -p wa -k logins
-
-If the two rules above are not found on each node, this is a finding."
-    when:
-        - cntr_os_001000
-    tags:
-        - CNTR-OS-001000
-        - CAT2
-        - CCI-000172
-        - SRG-APP-000506-CTR-001290
-        - SV-257582r921689_rule
-        - V-257582
-
   - name: "MEDIUM | CNTR-OS-001000 | PATCH | OpenShift must generate audit records when concurrent logons from different workstations and systems occur. | Fix"
     debug:
         msg: "Apply the machine config so concurrent logons are audited by executing the following:
@@ -5117,6 +3296,7 @@ spec:
 done"
     when:
         - cntr_os_001000
+        - okd412stig_cat2
     tags:
         - CNTR-OS-001000
         - CAT2
@@ -5127,25 +3307,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-001020 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable USB Storage kernel module."
   block:
-  - name: "MEDIUM | CNTR-OS-001020 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable USB Storage kernel module. | Check"
-    debug:
-        msg: "Verify the operating system disables the ability to load the USB Storage kernel module by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -r usb-storage /etc/modprobe.d/* | grep -i "/bin/true"' 2>/dev/null; done
-
-install usb-storage /bin/true
-
-If the command does not return any output, or the line is commented out, and use of USB Storage is not documented with the Information System Security Officer (ISSO) as an operational requirement, this is a finding."
-    when:
-        - cntr_os_001020
-    tags:
-        - CNTR-OS-001020
-        - CAT2
-        - CCI-000381
-        - SRG-APP-000141-CTR-000315
-        - SV-257584r921695_rule
-        - V-257584
-
   - name: "MEDIUM | CNTR-OS-001020 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable USB Storage kernel module. | Fix"
     debug:
         msg: "Apply the machine config to disable USB Storage to load USB Storage kernel module by executing the following:
@@ -5172,6 +3333,7 @@ spec:
 done"
     when:
         - cntr_os_001020
+        - okd412stig_cat2
     tags:
         - CNTR-OS-001020
         - CAT2
@@ -5182,42 +3344,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-001030 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must use USBGuard for hosts that include a USB Controller."
   block:
-  - name: "MEDIUM | CNTR-OS-001030 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must use USBGuard for hosts that include a USB Controller. | Check"
-    debug:
-        msg: "1. Determine if the host devices include a USB Controller by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; lspci' 2>/dev/null; done
-
-If there is not a USB Controller, then this requirement is Not Applicable.
-
-2. Verify the USBGuard service is installed by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; rpm -q usbguard' 2>/dev/null; done
-
-If the output returns "package usbguard is not installed", this is a finding.
-
-3. Verify that USBGuard is set up to log into the Linux audit log.
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -r AuditBackend /etc/usbguard/usbguard-daemon.conf' 2>/dev/null; done
-
-The output should return:
-"AuditBackend=LinuxAudit". If it does not, this is a finding.
-
-4. Verify the USBGuard has a policy configured with by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; usbguard list-rules' 2>/dev/null; done
-
-If USBGuard is not found or the results do not match the organizationally defined rules, this is a finding."
-    when:
-        - cntr_os_001030
-    tags:
-        - CNTR-OS-001030
-        - CAT2
-        - CCI-000381
-        - SRG-APP-000141-CTR-000315
-        - SV-257585r921698_rule
-        - V-257585
-
   - name: "MEDIUM | CNTR-OS-001030 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must use USBGuard for hosts that include a USB Controller. | Fix"
     debug:
         msg: "If there is not a USB Controller, this requirement is Not Applicable.
@@ -5312,6 +3438,7 @@ spec:
 done"
     when:
         - cntr_os_001030
+        - okd412stig_cat2
     tags:
         - CNTR-OS-001030
         - CAT2
@@ -5322,23 +3449,6 @@ done"
 
 - name: "MEDIUM | CNTR-OS-001060 | PATCH | OpenShift must continuously scan components, containers, and images for vulnerabilities."
   block:
-  - name: "MEDIUM | CNTR-OS-001060 | PATCH | OpenShift must continuously scan components, containers, and images for vulnerabilities. | Check"
-    debug:
-        msg: "To check if the Container Security Operator is running, execute the following:
-
-oc get deploy -n openshift-operators container-security-operator -ojsonpath='{.status.readyReplicas}'
-
-If this command returns an error or the number 0, and a separate tool is not being used to perform continuous vulnerability scans of components, containers, and container images, this is a finding."
-    when:
-        - cntr_os_001060
-    tags:
-        - CNTR-OS-001060
-        - CAT2
-        - CCI-000366
-        - SRG-APP-000516-CTR-001335
-        - SV-257586r921701_rule
-        - V-257586
-
   - name: "MEDIUM | CNTR-OS-001060 | PATCH | OpenShift must continuously scan components, containers, and images for vulnerabilities. | Fix"
     debug:
         msg: "Vulnerability scanning can be performed by the Container Security Operator, Red Hat Advanced Cluster Security (formerly StackRox) or by external applications. Follow instructions from the application vendor if using external tool for vulnerability scanning. To install the Container Security Operator into the cluster, run the following:
@@ -5361,6 +3471,7 @@ spec:
 EOF"
     when:
         - cntr_os_001060
+        - okd412stig_cat2
     tags:
         - CNTR-OS-001060
         - CAT2
@@ -5371,32 +3482,6 @@ EOF"
 
 - name: "MEDIUM | CNTR-OS-001080 | PATCH | OpenShift must use FIPS-validated SHA-2 or higher hash function for digital signature generation and verification (nonlegacy use)."
   block:
-  - name: "MEDIUM | CNTR-OS-001080 | PATCH | OpenShift must use FIPS-validated SHA-2 or higher hash function for digital signature generation and verification (nonlegacy use). | Check"
-    debug:
-        msg: "Verify the use of a FIPS-compliant hash function for digital signature generation and validation, by executing and reviewing the following commands:
-
-update-crypto-policies --show
-
-If the return is not "FIPS", this is a finding.
-
-Verify the crypto-policies by executing the following:
-
-openssl x509 -in /etc/kubernetes/kubelet-ca.crt -noout -text | grep Algorithm
-
-openssl x509 -in /etc/kubernetes/ca.crt -noout -text | grep Algorithm
-
-If any of the crypto-policies listed are not FIPS compliant, this is a finding. Details of algorithms can be reviewed at the following knowledge base article:
-https://access.redhat.com/articles/3642912"
-    when:
-        - cntr_os_001080
-    tags:
-        - CNTR-OS-001080
-        - CAT2
-        - CCI-000803
-        - SRG-APP-000610-CTR-001385
-        - SV-257587r921704_rule
-        - V-257587
-
   - name: "MEDIUM | CNTR-OS-001080 | PATCH | OpenShift must use FIPS-validated SHA-2 or higher hash function for digital signature generation and verification (nonlegacy use). | Fix"
     debug:
         msg: "Reinstall the OpenShift cluster in FIPS mode. The file install-config.yaml has a top-level key that enables FIPS mode for all nodes and the cluster platform layer. If the install-config.yaml was not backed up prior to consumption as part of the installation, it must be recreated. An example install-config.yaml with some sections trimmed out for brevity, and the "fips: true" key applied at the top level is shown below:
@@ -5433,6 +3518,7 @@ Where <installation_directory> is the directory that contains install-config.yam
 Additional details can be found here: https://docs.openshift.com/container-platform/4.8/installing/installing-fips.html"
     when:
         - cntr_os_001080
+        - okd412stig_cat2
     tags:
         - CNTR-OS-001080
         - CAT2

@@ -2,35 +2,6 @@
 
 - name: "HIGH | CNTR-OS-000090 | PATCH | OpenShift RBAC access controls must be enforced."
   block:
-  - name: "HIGH | CNTR-OS-000090 | PATCH | OpenShift RBAC access controls must be enforced. | Check"
-    debug:
-        msg: "The administrator must verify that OpenShift is configured with the necessary RBAC access controls.
-
-Review the RBAC configuration.
-
-As the cluster-admin, view the cluster roles and their associated rule sets by executing the following:
-
-oc describe clusterrole.rbac
-
-Now, view the current set of cluster role bindings, which shows the users and groups that are bound to various roles by executing the following:
-
-oc describe clusterrolebinding.rbac
-
-Local roles and bindings can be determined by executing the following:
-
-oc describe rolebinding.rbac
-
-If these results show users with privileged access that do not require that access, this is a finding."
-    when:
-        - cntr_os_000090
-    tags:
-        - CNTR-OS-000090
-        - CAT1
-        - CCI-000213
-        - SRG-APP-000033-CTR-000090
-        - SV-257513r921482_rule
-        - V-257513
-
   - name: "HIGH | CNTR-OS-000090 | PATCH | OpenShift RBAC access controls must be enforced. | Fix"
     debug:
         msg: "If users or groups exist that are bound to roles they must not have, modify the user or group permissions using the following cluster and local role binding commands:
@@ -54,6 +25,7 @@ oc adm policy remove-role-from-group <role> <groupname>
 Note: For additional information, refer to https://docs.openshift.com/container-platform/4.8/authentication/using-rbac.html."
     when:
         - cntr_os_000090
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000090
         - CAT1
@@ -64,25 +36,6 @@ Note: For additional information, refer to https://docs.openshift.com/container-
 
 - name: "HIGH | CNTR-OS-000170 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must initiate session audits at system startup."
   block:
-  - name: "HIGH | CNTR-OS-000170 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must initiate session audits at system startup. | Check"
-    debug:
-        msg: "Verify the RHCOS boot loader configuration has audit enabled, including backlog:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME ";  grep audit /boot/loader/entries/*.conf || echo "not found"' 2>/dev/null; done
-
-If "audit" is not set to "1" or returns "not found", this is a finding.
-
-If "audit_backlog" is not set to 8192 or returns "not found", this is a finding."
-    when:
-        - cntr_os_000170
-    tags:
-        - CNTR-OS-000170
-        - CAT1
-        - CCI-001464
-        - SRG-APP-000092-CTR-000165
-        - SV-257519r921500_rule
-        - V-257519
-
   - name: "HIGH | CNTR-OS-000170 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must initiate session audits at system startup. | Fix"
     debug:
         msg: "Apply the machine config by executing the following:
@@ -105,6 +58,7 @@ spec:
 done"
     when:
         - cntr_os_000170
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000170
         - CAT1
@@ -115,36 +69,6 @@ done"
 
 - name: "HIGH | CNTR-OS-000400 | PATCH | OpenShift must disable root and terminate network connections."
   block:
-  - name: "HIGH | CNTR-OS-000400 | PATCH | OpenShift must disable root and terminate network connections. | Check"
-    debug:
-        msg: "Verify SSH is restricted from logging on as root and network connections are terminated.
-
-Prevent logging on directly as "root" using SSH by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -i PermitRootLogin /etc/ssh/sshd_config' 2>/dev/null; done
-
-If the "PermitRootLogin" keyword is set to "yes", is missing, or is commented out, this is a finding.
-
-Verify all network connections associated with SSH traffic are automatically terminated at the end of the session or after 10 minutes of inactivity.
-
-Check the "ClientAliveCountMax" and ClientAliveInterval by executing the following command:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; grep -i clientalive /etc/ssh/sshd_config
-' 2>/dev/null; done
-
-If "ClientAliveCountMax" do not exist, is not set to a value of "0" in "/etc/ssh/sshd_config", or is commented out, this is a finding.
-
-If "ClientAliveInterval" does not exist, or has a value of > 600 in "/etc/ssh/sshd_config", or is commented out, this is a finding."
-    when:
-        - cntr_os_000400
-    tags:
-        - CNTR-OS-000400
-        - CAT1
-        - CCI-000764
-        - SRG-APP-000148-CTR-000335
-        - SV-257540r921563_rule
-        - V-257540
-
   - name: "HIGH | CNTR-OS-000400 | PATCH | OpenShift must disable root and terminate network connections. | Fix"
     debug:
         msg: "Apply the machine config that disables root and terminates network connections by executing the following:
@@ -171,6 +95,7 @@ spec:
 done"
     when:
         - cntr_os_000400
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000400
         - CAT1
@@ -181,23 +106,6 @@ done"
 
 - name: "HIGH | CNTR-OS-000460 | PATCH | OpenShift must use FIPS validated LDAP or OpenIDConnect."
   block:
-  - name: "HIGH | CNTR-OS-000460 | PATCH | OpenShift must use FIPS validated LDAP or OpenIDConnect. | Check"
-    debug:
-        msg: "Verify the authentication operator is configured to use either an LDAP or a OpenIDConnect provider by executing the following:
-
-oc get oauth cluster -o jsonpath="{.spec.identityProviders[*].type}{'\n'}"
-
-If the output lists any other type besides LDAP or OpenID, this is a finding."
-    when:
-        - cntr_os_000460
-    tags:
-        - CNTR-OS-000460
-        - CAT1
-        - CCI-000016
-        - SRG-APP-000172-CTR-000440
-        - SV-257543r921572_rule
-        - V-257543
-
   - name: "HIGH | CNTR-OS-000460 | PATCH | OpenShift must use FIPS validated LDAP or OpenIDConnect. | Fix"
     debug:
         msg: "Configure OpenShift to use an appropriate Identity Provider. Do not use HTPasswd. Use either LDAP(AD), OpenIDConnect or an approved identity provider.
@@ -292,6 +200,7 @@ oc apply -f ldapidp.yaml
 Note: For more information on configuring an OpenID provider, refer to https://docs.openshift.com/container-platform/4.8/authentication/identity_providers/configuring-oidc-identity-provider.html."
     when:
         - cntr_os_000460
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000460
         - CAT1
@@ -302,23 +211,6 @@ Note: For more information on configuring an OpenID provider, refer to https://d
 
 - name: "HIGH | CNTR-OS-000510 | PATCH | OpenShift must protect authenticity of communications sessions with the use of FIPS-validated 140-2 or 140-3 validated cryptography."
   block:
-  - name: "HIGH | CNTR-OS-000510 | PATCH | OpenShift must protect authenticity of communications sessions with the use of FIPS-validated 140-2 or 140-3 validated cryptography. | Check"
-    debug:
-        msg: "To validate the OpenShift cluster is running with FIPS enabled on each node by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; sysctl crypto.fips_enabled' 2>/dev/null; done
-
-If any lines of output end in anything other than 1, this is a finding."
-    when:
-        - cntr_os_000510
-    tags:
-        - CNTR-OS-000510
-        - CAT1
-        - CCI-001184
-        - SRG-APP-000219-CTR-000550
-        - SV-257546r921581_rule
-        - V-257546
-
   - name: "HIGH | CNTR-OS-000510 | PATCH | OpenShift must protect authenticity of communications sessions with the use of FIPS-validated 140-2 or 140-3 validated cryptography. | Fix"
     debug:
         msg: "Reinstall the OpenShift cluster in FIPS mode. The file install-config.yaml has a top-level key that enables FIPS mode for all nodes and the cluster platform layer. If the install-config.yaml was not backed up prior to consumption as part of the installation, recreate it. An example install-config.yaml with some sections trimmed out for brevity, and the "fips: true" key applied at the top level is shown below:
@@ -354,6 +246,7 @@ Where <installation_directory> is the directory that contains install-config.yam
 Additional details can be found here: https://docs.openshift.com/container-platform/4.8/installing/installing-fips.html"
     when:
         - cntr_os_000510
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000510
         - CAT1
@@ -364,60 +257,6 @@ Additional details can be found here: https://docs.openshift.com/container-platf
 
 - name: "HIGH | CNTR-OS-000660 | PATCH | Container images instantiated by OpenShift must execute using least privileges."
   block:
-  - name: "HIGH | CNTR-OS-000660 | PATCH | Container images instantiated by OpenShift must execute using least privileges. | Check"
-    debug:
-        msg: "Check SCC:
-
-1. Identify any SCC policy that allows containers to access the host network or filesystem resources, or allows privileged containers or where runAsUser is not MustRunAsRange by executing the following:
-
-oc get scc -ojson | jq '.items[]|select(.allowHostIPC or .allowHostPID or .allowHostPorts or .allowHostNetwork or .allowHostDirVolumePlugin or .allowPrivilegedContainer or .runAsUser.type != "MustRunAsRange" )|.metadata.name,{"Group:":.groups},{"User":.users}'
-
-For each SCC listed, if any of those users or groups are anything other than the following, this is a finding:
-
-  * system:cluster-admins
-  * system:nodes
-  * system:masters
-  * system:admin
-  * system:serviceaccount:openshift-infra:build-controller
-  * system:serviceaccount:openshift-infra:pv-recycler-controller
-  * system:serviceaccount:openshift-machine-api:machine-api-termination-handler
-
-The group "system:authenticated" is the default group for any authenticated user, this group should only be associated with the restricted profile. If this group is listed under any other SCC Policy, or the restricted SCC policy has been altered to allow any of the nonpermitted actions, this is a finding.
-
-2. Determine if there are any cluster roles or local roles that allow the use of use of nonpermitted SCC policies. The following commands will print the role's name and namespace, followed by a list of resource names and if that resource is an SCC.
-
-oc get clusterrole.rbac -ojson | jq -r '.items[]|select(.rules[]?|select( (.apiGroups[]? == ("security.openshift.io")) and (.resources[]? == ("securitycontextconstraints")) and (.verbs[]? == ("use"))))|.metadata.name,{"scc":(.rules[]?|select((.resources[]? == ("securitycontextconstraints"))).resourceNames[]?)}'
-
-oc get role.rbac --all-namespaces -ojson | jq -r '.items[]|select(.rules[]?|select( (.apiGroups[]? == ("security.openshift.io")) and (.resources[]? == ("securitycontextconstraints")) and (.verbs[]? == ("use"))))|.metadata.name,{"scc":(.rules[]?|select((.resources[]? == ("securitycontextconstraints"))).resourceNames[]?)}'
-
-Excluding platform specific roles, identify any roles that allow use of nonpermitted SCC policies. For example, the follow output shows that the role 'examplePrivilegedRole' allows use of the 'privileged' SCC.
-
-examplePrivilegedRole
-{
-  "scc": "privileged"
-}
-
-3. Determine if there are any role bindings to cluster or local roles that allow use of nonpermitted SCCs by executing the following:
-
-oc get clusterrolebinding.rbac -ojson | jq -r '.items[]|select(.roleRef.kind == ("ClusterRole","Role") and .roleRef.name == (<CLUSTER_ROLE_LIST>))|{ "crb": .metadata.name, "roleRef": .roleRef, "subjects": .subjects}'
-
-oc get rolebinding.rbac --all-namespaces -ojson | jq -r '.items[]|select(.roleRef.kind == ("ClusterRole","Role") and .roleRef.name == (<LOCAL_ROLE_LIST>))|{ "crb": .metadata.name, "roleRef": .roleRef, "subjects": .subjects}'
-
-Where <CLUSTER_ROLE_LIST> and <LOCAL_ROLE_LIST> are comma-separated lists of the roles allowing use of nonpermitted SCC policies as identified above. For example:
-
-... .roleRef.name == ("system:openshift:scc:privileged","system:openshift:scc:hostnetwork","system:openshift:scc:hostaccess") ...
-
-Excluding any platform namespaces (kube-*,openshift-*), if there are any rolebindings to roles that are not permitted, this is a finding."
-    when:
-        - cntr_os_000660
-    tags:
-        - CNTR-OS-000660
-        - CAT1
-        - CCI-000382
-        - SRG-APP-000342-CTR-000775
-        - SV-257557r921614_rule
-        - V-257557
-
   - name: "HIGH | CNTR-OS-000660 | PATCH | Container images instantiated by OpenShift must execute using least privileges. | Fix"
     debug:
         msg: "For users and groups that are defined in the SCC policy, execute the following to remove the users or groups by editing the corresponding SCC policy.
@@ -446,6 +285,7 @@ or
 oc delete role.rbac <ROLE> -n <NAMESPACE>"
     when:
         - cntr_os_000660
+        - okd412stig_cat1
     tags:
         - CNTR-OS-000660
         - CAT1
@@ -456,23 +296,6 @@ oc delete role.rbac <ROLE> -n <NAMESPACE>"
 
 - name: "HIGH | CNTR-OS-001010 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable SSHD service."
   block:
-  - name: "HIGH | CNTR-OS-001010 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable SSHD service. | Check"
-    debug:
-        msg: "Verify the SSHD service is inactive and disabled by executing the following:
-
-for node in $(oc get node -oname); do oc debug $node -- chroot /host /bin/bash -c 'echo -n "$HOSTNAME "; systemctl is-enabled sshd.service; systemctl is-active sshd.service' 2>/dev/null; done 
-
-If the SSHD service is either active or enabled this is a finding."
-    when:
-        - cntr_os_001010
-    tags:
-        - CNTR-OS-001010
-        - CAT1
-        - CCI-000381
-        - SRG-APP-000141-CTR-000315
-        - SV-257583r921692_rule
-        - V-257583
-
   - name: "HIGH | CNTR-OS-001010 | PATCH | Red Hat Enterprise Linux CoreOS (RHCOS) must disable SSHD service. | Fix"
     debug:
         msg: "Apply the machine config to disable SSHD service by executing following: 
@@ -496,6 +319,7 @@ spec:
 done"
     when:
         - cntr_os_001010
+        - okd412stig_cat1
     tags:
         - CNTR-OS-001010
         - CAT1
